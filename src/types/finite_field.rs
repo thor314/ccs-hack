@@ -98,3 +98,63 @@ impl Div for FiniteField {
         Ok(self * other.inverse()?)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use num_bigint::ToBigUint;
+
+    #[test]
+    fn test_add() {
+        let a = FiniteField::new(3.to_biguint().unwrap(), 5.to_biguint().unwrap());
+        let b = FiniteField::new(4.to_biguint().unwrap(), 5.to_biguint().unwrap());
+        let result = a + b;
+        assert_eq!(result.value, 2.to_biguint().unwrap());
+    }
+
+    #[test]
+    fn test_sub() {
+        let a = FiniteField::new(3.to_biguint().unwrap(), 5.to_biguint().unwrap());
+        let b = FiniteField::new(4.to_biguint().unwrap(), 5.to_biguint().unwrap());
+        let result = a - b;
+        assert_eq!(result.value, 4.to_biguint().unwrap());
+    }
+
+    #[test]
+    fn test_mul() {
+        let a = FiniteField::new(3.to_biguint().unwrap(), 5.to_biguint().unwrap());
+        let b = FiniteField::new(4.to_biguint().unwrap(), 5.to_biguint().unwrap());
+        let result = a * b;
+        assert_eq!(result.value, 2.to_biguint().unwrap());
+    }
+
+    #[test]
+    fn test_div() {
+        let a = FiniteField::new(3.to_biguint().unwrap(), 5.to_biguint().unwrap());
+        let b = FiniteField::new(4.to_biguint().unwrap(), 5.to_biguint().unwrap());
+        let result = a / b;
+        assert_eq!(result.unwrap().value, 2.to_biguint().unwrap());
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_div_by_zero() {
+        let a = FiniteField::new(3.to_biguint().unwrap(), 5.to_biguint().unwrap());
+        let b = FiniteField::new(0.to_biguint().unwrap(), 5.to_biguint().unwrap());
+        let _ = a / b;
+    }
+
+    #[test]
+    fn test_inverse() {
+        let a = FiniteField::new(3.to_biguint().unwrap(), 5.to_biguint().unwrap());
+        let inverse = a.inverse();
+        assert_eq!(inverse.unwrap().value, 2.to_biguint().unwrap());
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_inverse_zero() {
+        let a = FiniteField::new(0.to_biguint().unwrap(), 5.to_biguint().unwrap());
+        let _ = a.inverse();
+    }
+}
