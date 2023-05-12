@@ -15,6 +15,7 @@ ark-ff = "0.4.2"
 nalgebra = "0.32.2"
 ndarray = "0.15.6"
 num-bigint = "0.3.2"
+num-traits = "0.2.15"
 # Common
 # itertools = "0.10.3" # danielkeep.github.io/itercheat_baked.html
 # cfg-if = "1.0.0" # branching compilation logic

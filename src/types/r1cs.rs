@@ -1,11 +1,13 @@
 use std::fmt;
 
+use ark_ff::PrimeField;
 use ndarray::{Array, Array2, IxDyn};
 use num_bigint::BigUint; // For matrix and vector operations
 
-use crate::types::finite_field::FiniteField;
+// use crate::types::finite_field::FiniteField;
 
 // Custom error for operations that are not allowed in R1CS
+// todo: enum
 #[derive(Debug)]
 pub struct R1CSError {
   details: String,
@@ -19,25 +21,25 @@ impl fmt::Display for R1CSError {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.details) }
 }
 
-pub struct R1CS {
+pub struct R1CS<F: PrimeField> {
   m: usize,
   n: usize,
   N: usize,
   l: usize,
-  A: Array2<FiniteField>,
-  B: Array2<FiniteField>,
-  C: Array2<FiniteField>,
+  A: Array2<F>,
+  B: Array2<F>,
+  C: Array2<F>,
 }
 
-pub struct R1CSInstance {
-  x: Array<FiniteField, IxDyn>,
+pub struct R1CSInstance<F: PrimeField> {
+  x: Array<F, IxDyn>,
 }
 
-pub struct R1CSWitness {
-  w: Array<FiniteField, IxDyn>,
+pub struct R1CSWitness<F: PrimeField> {
+  w: Array<F, IxDyn>,
 }
 
-impl R1CS {
+impl<F: PrimeField> R1CS<F> {
   pub fn is_satisfied_by(
     &self,
     instance: &R1CSInstance,
@@ -52,7 +54,7 @@ impl R1CS {
     }
 
     // Compute z = (w, 1, x)
-    let one_value = FiniteField::new(BigUint::one(), self.A[[0, 0]].p.clone());
+    let one_value = F::new(BigUint::one(), self.A[[0, 0]].p.clone());
     let z = witness
       .w
       .clone()
@@ -76,6 +78,7 @@ impl R1CS {
 
 #[cfg(test)]
 mod tests {
+  use ark_ff::Fp2; // arbitrary convenient quadratic extension field
   use ndarray::arr2; // For creating 2D arrays
   use num_bigint::ToBigUint;
 
@@ -83,11 +86,11 @@ mod tests {
 
   #[test]
   fn test_r1cs_satisfied() {
-    let a = arr2(&[[FiniteField::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
-    let b = arr2(&[[FiniteField::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
-    let c = arr2(&[[FiniteField::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
-    let x = Array::from(vec![FiniteField::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
-    let w = Array::from(vec![FiniteField::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
+    let a = arr2(&[[Fp2::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
+    let b = arr2(&[[Fp2::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
+    let c = arr2(&[[Fp2::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
+    let x = Array::from(vec![Fp2::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
+    let w = Array::from(vec![Fp2::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
     let r1cs = R1CS { m: 1, n: 1, N: 1, l: 1, A: a, B: b, C: c };
     let instance = R1CSInstance { x };
     let witness = R1CSWitness { w };
@@ -97,11 +100,11 @@ mod tests {
 
   #[test]
   fn test_r1cs_not_satisfied() {
-    let a = arr2(&[[FiniteField::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
-    let b = arr2(&[[FiniteField::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
-    let c = arr2(&[[FiniteField::new(3.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
-    let x = Array::from(vec![FiniteField::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
-    let w = Array::from(vec![FiniteField::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
+    let a = arr2(&[[Fp2::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
+    let b = arr2(&[[Fp2::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
+    let c = arr2(&[[Fp2::new(3.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
+    let x = Array::from(vec![Fp2::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
+    let w = Array::from(vec![Fp2::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
     let r1cs = R1CS { m: 1, n: 1, N: 1, l: 1, A: a, B: b, C: c };
     let instance = R1CSInstance { x };
     let witness = R1CSWitness { w };
@@ -111,14 +114,14 @@ mod tests {
 
   #[test]
   fn test_r1cs_invalid_dimensions() {
-    let a = arr2(&[[FiniteField::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
+    let a = arr2(&[[Fp2::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
     let b = arr2(&[[
-      FiniteField::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap()),
-      FiniteField::new(3.to_biguint().unwrap(), 5.to_biguint().unwrap()),
+      Fp2::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap()),
+      Fp2::new(3.to_biguint().unwrap(), 5.to_biguint().unwrap()),
     ]]);
-    let c = arr2(&[[FiniteField::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
-    let x = Array::from(vec![FiniteField::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
-    let w = Array::from(vec![FiniteField::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
+    let c = arr2(&[[Fp2::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
+    let x = Array::from(vec![Fp2::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
+    let w = Array::from(vec![Fp2::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
     let r1cs = R1CS { m: 1, n: 1, N: 1, l: 1, A: a, B: b, C: c };
     let instance = R1CSInstance { x };
     let witness = R1CSWitness { w };
@@ -128,11 +131,11 @@ mod tests {
 
   #[test]
   fn test_r1cs_invalid_n_l() {
-    let a = arr2(&[[FiniteField::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
-    let b = arr2(&[[FiniteField::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
-    let c = arr2(&[[FiniteField::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
-    let x = Array::from(vec![FiniteField::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
-    let w = Array::from(vec![FiniteField::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
+    let a = arr2(&[[Fp2::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
+    let b = arr2(&[[Fp2::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
+    let c = arr2(&[[Fp2::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
+    let x = Array::from(vec![Fp2::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
+    let w = Array::from(vec![Fp2::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
     let r1cs = R1CS { m: 1, n: 1, N: 1, l: 2, A: a, B: b, C: c };
     let instance = R1CSInstance { x };
     let witness = R1CSWitness { w };

@@ -1,62 +1,74 @@
 use std::fmt;
 
+use ark_ff::PrimeField;
 use ndarray::{Array, Array2};
-use num_bigint::BigUint; // For matrix and vector operations
+use num_bigint::BigUint;
+use thiserror::Error;
 
-use super::finite_field::FiniteField;
+use super::{LArray, Multiset}; // For matrix and vector operations
 
+#[derive(Debug, Error)]
+pub enum CCSError {
+  #[error(transparent)]
+  Anyhow(#[from] anyhow::Error),
+  #[error("Default error: {0}")]
+  Default(String),
+}
+
+use num_traits::{Bounded, Unsigned};
+
+// Defining the CCS structure
+// todo: may want to move some of these usize parameters into type gen
 #[derive(Debug)]
-pub struct CCSError {
-  details: String,
-}
-
-impl CCSError {
-  fn new(msg: &str) -> CCSError { CCSError { details: msg.to_string() } }
-}
-
-impl fmt::Display for CCSError {
-  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.details) }
-}
-
-pub struct CCS {
+pub struct CCS<F: PrimeField, const l: usize, const n: usize, const t: usize>
+where
+  // enforce `n-l>0` at type level
+  // ensure that `n-l` can be computed correctly
+  [(); n - l]:,
+  usize: Unsigned + Bounded, {
   m: usize,
-  n: usize,
+  // todo: n > l
   N: usize,
-  l: usize,
   t: usize,
   q: usize,
   d: usize,
-  M: Vec<Array2<FiniteField>>,
-  S: Vec<Vec<usize>>,
-  c: Vec<FiniteField>,
+  /// matrices $M_0,...,M_{t-1}\in \mathbb F^{m\times n}$ with at most $N=\Omega(\max(m,n))$
+  /// non-zero entries in total
+  M: Vec<Array<F,t>>,
+  /// a sequence of $q$ multisets $[S_0,...,S_{q-1}]$ where an element in each multiset is from the
+  /// domain $[t-1]$, with cardinatily of each multiset at most $d$
+  S: Multiset<usize>,
+  /// a sequence of $q$ constants $[c_0,...,c_{q-1}]$ with $c_i\in \mathbb F$.
+  c: Vec<F>,
 }
 
-pub struct CCSInstance {
-  x: Array<FiniteField>,
+/// A CCS witness consists of a vector $w\in $\mathbb F^{n-l-l}$.
+#[derive(Debug)]
+pub struct CCSWitness<F: PrimeField, const l: usize> {
+  x: LArray<F, l>,
 }
 
-pub struct CCSWitness {
-  w: Array<FiniteField>,
+// impl<const l: usize> CCS<l> {
+//   pub fn is_satisfied_by(&self, instance: &CCSInstance<l>, witness: &CCSWitness<l>) -> bool {
+//     todo!();
+//     // Implement the checks based on the equation (2) in the definition
+//     // This will involve matrix-vector multiplication, Hadamard product, and summing over the
+//     // multisets
+//   }
+// }
+// /// A CCS instance consists of public input $x\in \mathbb F^l$.
+#[derive(Debug)]
+pub struct CCSInstance<F: PrimeField, const l: usize> {
+  x: LArray<F, l>,
 }
 
-impl One for FiniteField {
-  fn one() -> Self {
-    Self {
-      value: BigUint::one(),
-      p:     BigUint::from(5u32), // or whatever prime number you'd like
-    }
-  }
-}
-impl CCS {
+impl<F: PrimeField, const l: usize, const n: usize> CCS<F, l, n> {
   pub fn is_satisfied_by(
     &self,
-    instance: &CCSInstance,
-    witness: &CCSWitness,
+    instance: &CCSInstance<F, l>,
+    witness: &CCSWitness<F, l>,
   ) -> Result<bool, CCSError> {
-    if self.n < self.l {
-      return Err(CCSError::new("n must be greater than l"));
-    }
-
+    // todo: validate at type level
     if self.M.len() != self.t {
       return Err(CCSError::new("M must have length t"));
     }
@@ -74,21 +86,13 @@ impl CCS {
       .w
       .clone()
       .into_iter()
-      .chain(
-        std::iter::once(FiniteField::one(&self.M[0][[0, 0]].p))
-          .chain(instance.x.clone().into_iter()),
-      )
+      .chain(std::iter::once(F::one()).chain(instance.x.clone().into_iter()))
       .collect::<Array<_, _>>();
 
     // Compute sum from i=0 to q-1 of (ci * sum for each j in Si of Mj * z)
     let result = (0..self.q)
-      .map(|i| {
-        self.c[i]
-          * self.S[i]
-            .iter()
-            .fold(FiniteField::zero(&self.M[0][[0, 0]].p), |sum, &j| sum + self.M[j].dot(&z))
-      })
-      .sum::<FiniteField>();
+      .map(|i| self.c[i] * self.S[i].iter().fold(F::zero(), |sum, &j| sum + self.M[j].dot(&z)))
+      .sum::<F>();
 
     // Check if result is zero
     Ok(result.is_zero())
@@ -104,16 +108,16 @@ mod tests {
 
   #[test]
   fn test_ccs_satisfaction() {
-    let m0 = arr2(&[[FiniteField::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
-    let m1 = arr2(&[[FiniteField::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
+    let m0 = arr2(&[[F::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
+    let m1 = arr2(&[[F::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
     let m = vec![m0, m1];
     let s = vec![vec![0], vec![1]];
     let c = vec![
-      FiniteField::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap()),
-      FiniteField::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap()),
+      F::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap()),
+      F::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap()),
     ];
-    let x = Array::from(vec![FiniteField::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
-    let w = Array::from(vec![FiniteField::new(3.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
+    let x = Array::from(vec![F::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
+    let w = Array::from(vec![F::new(3.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
     let ccs = CCS { m: 1, n: 1, N: 1, l: 1, t: 2, q: 2, d: 1, M: m, S: s, c };
     let instance = CCSInstance { x };
     let witness = CCSWitness { w };
@@ -123,12 +127,12 @@ mod tests {
 
   #[test]
   fn test_ccs_invalid_n_l() {
-    let m0 = arr2(&[[FiniteField::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
+    let m0 = arr2(&[[F::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
     let m = vec![m0];
     let s = vec![vec![0]];
-    let c = vec![FiniteField::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap())];
-    let x = Array::from(vec![FiniteField::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
-    let w = Array::from(vec![FiniteField::new(3.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
+    let c = vec![F::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap())];
+    let x = Array::from(vec![F::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
+    let w = Array::from(vec![F::new(3.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
     let ccs = CCS { m: 1, n: 1, N: 1, l: 2, t: 1, q: 1, d: 1, M: m, S: s, c };
     let instance = CCSInstance { x };
     let witness = CCSWitness { w };
@@ -138,12 +142,12 @@ mod tests {
 
   #[test]
   fn test_ccs_invalid_m_length() {
-    let m0 = arr2(&[[FiniteField::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
+    let m0 = arr2(&[[F::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
     let m = vec![m0];
     let s = vec![vec![0]];
-    let c = vec![FiniteField::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap())];
-    let x = Array::from(vec![FiniteField::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
-    let w = Array::from(vec![FiniteField::new(3.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
+    let c = vec![F::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap())];
+    let x = Array::from(vec![F::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
+    let w = Array::from(vec![F::new(3.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
     let ccs = CCS { m: 1, n: 1, N: 1, l: 1, t: 2, q: 1, d: 1, M: m, S: s, c };
     let instance = CCSInstance { x };
     let witness = CCSWitness { w };
@@ -153,12 +157,12 @@ mod tests {
 
   #[test]
   fn test_ccs_invalid_s_length() {
-    let m0 = arr2(&[[FiniteField::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
+    let m0 = arr2(&[[F::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
     let m = vec![m0];
     let s = vec![vec![0]];
-    let c = vec![FiniteField::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap())];
-    let x = Array::from(vec![FiniteField::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
-    let w = Array::from(vec![FiniteField::new(3.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
+    let c = vec![F::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap())];
+    let x = Array::from(vec![F::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
+    let w = Array::from(vec![F::new(3.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
     let ccs = CCS { m: 1, n: 1, N: 1, l: 1, t: 1, q: 2, d: 1, M: m, S: s, c };
     let instance = CCSInstance { x };
     let witness = CCSWitness { w };
@@ -168,13 +172,13 @@ mod tests {
 
   #[test]
   fn test_ccs_invalid_c_length() {
-    let m0 = arr2(&[[FiniteField::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
+    let m0 = arr2(&[[F::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
     let m = vec![m0, m0];
     let s = vec![vec![0], vec![1]];
     // Modify 'c' length
-    let c = vec![FiniteField::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap())]; // c's length is now 1, not 2.
-    let x = Array::from(vec![FiniteField::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
-    let w = Array::from(vec![FiniteField::new(3.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
+    let c = vec![F::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap())]; // c's length is now 1, not 2.
+    let x = Array::from(vec![F::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
+    let w = Array::from(vec![F::new(3.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
     let ccs = CCS { m: 1, n: 1, N: 1, l: 1, t: 2, q: 2, d: 1, M: m, S: s, c };
     let instance = CCSInstance { x };
     let witness = CCSWitness { w };
@@ -183,16 +187,16 @@ mod tests {
   }
   #[test]
   fn test_ccs_invalid_M_length() {
-    let m0 = arr2(&[[FiniteField::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
+    let m0 = arr2(&[[F::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
     // Modify 'M' length
     let m = vec![m0]; // M's length is now 1, not 2.
     let s = vec![vec![0], vec![1]];
     let c = vec![
-      FiniteField::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap()),
-      FiniteField::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap()),
+      F::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap()),
+      F::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap()),
     ];
-    let x = Array::from(vec![FiniteField::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
-    let w = Array::from(vec![FiniteField::new(3.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
+    let x = Array::from(vec![F::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
+    let w = Array::from(vec![F::new(3.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
     let ccs = CCS { m: 1, n: 1, N: 1, l: 1, t: 2, q: 2, d: 1, M: m, S: s, c };
     let instance = CCSInstance { x };
     let witness = CCSWitness { w };
@@ -202,16 +206,16 @@ mod tests {
 
   #[test]
   fn test_ccs_invalid_x_length() {
-    let m0 = arr2(&[[FiniteField::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
+    let m0 = arr2(&[[F::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
     let m = vec![m0, m0];
     let s = vec![vec![0], vec![1]];
     let c = vec![
-      FiniteField::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap()),
-      FiniteField::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap()),
+      F::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap()),
+      F::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap()),
     ];
     // Modify 'x' length
     let x = Array::from(vec![]); // x's length is now 0, not 1.
-    let w = Array::from(vec![FiniteField::new(3.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
+    let w = Array::from(vec![F::new(3.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
     let ccs = CCS { m: 1, n: 1, N: 1, l: 1, t: 2, q: 2, d: 1, M: m, S: s, c };
     let instance = CCSInstance { x };
     let witness = CCSWitness { w };
@@ -220,14 +224,14 @@ mod tests {
   }
   #[test]
   fn test_ccs_invalid_w_length() {
-    let m0 = arr2(&[[FiniteField::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
+    let m0 = arr2(&[[F::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
     let m = vec![m0, m0];
     let s = vec![vec![0], vec![1]];
     let c = vec![
-      FiniteField::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap()),
-      FiniteField::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap()),
+      F::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap()),
+      F::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap()),
     ];
-    let x = Array::from(vec![FiniteField::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
+    let x = Array::from(vec![F::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
     // Modify 'w' length
     let w = Array::from(vec![]); // w's length is now 0, not 1 (n - l - 1 = 1 - 1 - 1 = -1).
     let ccs = CCS { m: 1, n: 1, N: 1, l: 1, t: 2, q: 2, d: 1, M: m, S: s, c };
@@ -238,16 +242,16 @@ mod tests {
   }
   #[test]
   fn test_ccs_invalid_S_cardinality() {
-    let m0 = arr2(&[[FiniteField::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
+    let m0 = arr2(&[[F::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
     let m = vec![m0, m0];
     // Modify 'S' cardinality
     let s = vec![vec![0, 0], vec![1, 1]]; // Each multiset in S now has cardinality 2, not 1 (maximum allowed by 'd').
     let c = vec![
-      FiniteField::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap()),
-      FiniteField::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap()),
+      F::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap()),
+      F::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap()),
     ];
-    let x = Array::from(vec![FiniteField::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
-    let w = Array::from(vec![FiniteField::new(3.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
+    let x = Array::from(vec![F::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
+    let w = Array::from(vec![F::new(3.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
     let ccs = CCS { m: 1, n: 1, N: 1, l: 1, t: 2, q: 2, d: 1, M: m, S: s, c };
     let instance = CCSInstance { x };
     let witness = CCSWitness { w };
@@ -256,16 +260,16 @@ mod tests {
   }
   #[test]
   fn test_ccs_invalid_S_domain() {
-    let m0 = arr2(&[[FiniteField::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
+    let m0 = arr2(&[[F::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
     let m = vec![m0, m0];
     // Modify 'S' domain
     let s = vec![vec![0, 2], vec![1]]; // 2 is not in the domain {0, 1} (t - 1 = 2 - 1 = 1).
     let c = vec![
-      FiniteField::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap()),
-      FiniteField::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap()),
+      F::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap()),
+      F::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap()),
     ];
-    let x = Array::from(vec![FiniteField::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
-    let w = Array::from(vec![FiniteField::new(3.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
+    let x = Array::from(vec![F::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
+    let w = Array::from(vec![F::new(3.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
     let ccs = CCS { m: 1, n: 1, N: 1, l: 1, t: 2, q: 2, d: 1, M: m, S: s, c };
     let instance = CCSInstance { x };
     let witness = CCSWitness { w };
@@ -274,46 +278,4 @@ mod tests {
   }
 }
 
-// use super::{finite_field::FiniteField, LArray, Multiset};
-
-// // Defining the CCS structure
-// // todo: may want to move some of these usize parameters into type gen
-// #[derive(Debug)]
-// pub struct CCS<const l: usize> {
-//   m: usize,
-//   // todo: n > l
-//   n: usize,
-//   N: usize,
-//   t: usize,
-//   q: usize,
-//   d: usize,
-//   /// matrices $M_0,...,M_{t-1}\in \mathbb F^{m\times n}$ with at most $N=\Omega(\max(m,n))$
-//   /// non-zero entries in total
-//   M: Vec<Array2<FiniteField>>,
-//   /// a sequence of $q$ multisets $[S_0,...,S_{q-1}]$ where an element in each multiset is from
-// the   /// domain $[t-1]$, with cardinatily of each multiset at most $d$
-//   S: Multiset<usize>,
-//   /// a sequence of $q$ constants $[c_0,...,c_{q-1}]$ with $c_i\in \mathbb F$.
-//   c: Vec<FiniteField>,
-// }
-
-// /// A CCS instance consists of public input $x\in \mathbb F^l$.
-// #[derive(Debug)]
-// pub struct CCSInstance<const l: usize> {
-//   x: LArray<l>,
-// }
-
-// /// A CCS witness consists of a vector $w\in $\mathbb F^{n-l-l}$.
-// #[derive(Debug)]
-// pub struct CCSWitness<const l: usize> {
-//   x: LArray<l>,
-// }
-
-// impl<const l: usize> CCS<l> {
-//   pub fn is_satisfied_by(&self, instance: &CCSInstance<l>, witness: &CCSWitness<l>) -> bool {
-//     todo!();
-//     // Implement the checks based on the equation (2) in the definition
-//     // This will involve matrix-vector multiplication, Hadamard product, and summing over the
-//     // multisets
-//   }
-// }
+// use super::{finite_field::F, LArray, Multiset};
