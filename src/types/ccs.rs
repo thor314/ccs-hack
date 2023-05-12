@@ -1,9 +1,6 @@
 use ndarray::{Array, Array2};
 
-use super::finite_field::FiniteField;
-
-// Multisets are represented as Vecs (placeholder)
-type Multiset<T> = Vec<Vec<T>>;
+use super::{finite_field::FiniteField, LArray, Multiset};
 
 // Defining the CCS structure
 // todo: may want to move some of these usize parameters into type gen
@@ -29,13 +26,13 @@ pub struct CCS<const l: usize> {
 /// A CCS instance consists of public input $x\in \mathbb F^l$.
 #[derive(Debug)]
 pub struct CCSInstance<const l: usize> {
-  x: Array<FiniteField, ndarray::Dim<[ndarray::Ix; l]>>,
+  x: LArray<l>,
 }
 
 /// A CCS witness consists of a vector $w\in $\mathbb F^{n-l-l}$.
 #[derive(Debug)]
 pub struct CCSWitness<const l: usize> {
-  x: Array<FiniteField, ndarray::Dim<[ndarray::Ix; l]>>,
+  x: LArray<l>,
 }
 
 impl<const l: usize> CCS<l> {
