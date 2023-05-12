@@ -99,6 +99,7 @@ impl Div for FiniteField {
     }
 }
 
+
 #[cfg(test)]
 mod tests {
     use super::*;

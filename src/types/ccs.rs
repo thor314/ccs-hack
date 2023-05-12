@@ -1,4 +1,5 @@
-use ndarray::{Array, Array2}; // For matrix and vector operations
+use ndarray::{Array, Array2};
+use num_bigint::BigUint; // For matrix and vector operations
 use std::fmt;
 
 use super::finite_field::FiniteField;
@@ -34,13 +35,23 @@ pub struct CCS {
 }
 
 pub struct CCSInstance {
-    x: Array<FiniteField>,
+    x: Array<FiniteField, D>,
 }
 
 pub struct CCSWitness {
-    w: Array<FiniteField>,
+    w: Array<FiniteField, D>,
 }
 
+use num_traits::One;
+
+impl One for FiniteField {
+    fn one() -> Self {
+        Self {
+            value: BigUint::one(),
+            p: BigUint::from(5u32), // or whatever prime number you'd like
+        }
+    }
+}
 impl CCS {
     pub fn is_satisfied_by(&self, instance: &CCSInstance, witness: &CCSWitness) -> Result<bool, CCSError> {
         if self.n < self.l {

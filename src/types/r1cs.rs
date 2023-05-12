@@ -1,6 +1,9 @@
-use ndarray::{Array, Array2, IxDyn}; // For matrix and vector operations
+use ndarray::{Array, Array2, IxDyn};
+use num_bigint::BigUint; // For matrix and vector operations
 use std::fmt;
 use crate::types::finite_field::FiniteField;
+use num_traits::One;
+
 // Custom error for operations that are not allowed in R1CS
 #[derive(Debug)]
 pub struct R1CSError {
@@ -48,18 +51,39 @@ impl R1CS {
         }
 
         // Compute z = (w, 1, x)
+        let one_value = FiniteField::new(BigUint::one(), self.A[[0,0]].p.clone());
         let z = witness.w.clone().into_iter().chain(
-            std::iter::once(FiniteField::one(&self.A[[0,0]].p)).chain(instance.x.clone().into_iter())
+            std::iter::once(one_value).chain(instance.x.clone().into_iter())
         ).collect::<Array<_, _>>();
 
         // Compute (A * z) * (B * z) - C * z
-        let lhs = self.A.dot(&z).into_iter().zip(self.B.dot(&z).into_iter()).map(|(a, b)| a * b).collect::<Array<_, _>>();
-        let rhs = self.C.dot(&z);
-        let result = lhs - rhs;
+        let a_product = self.A.dot(&z);
+        let b_product = self.B.dot(&z);
+        let c_product = self.C.dot(&z);
+
+        let lhs: Array<_, _> = a_product.iter().zip(b_product.iter())
+            .map(|(a, b)| a * b)
+            .collect();
+
+        let result = lhs - c_product;
 
         // Check if all entries are zero
         Ok(result.iter().all(|x| x.is_zero()))
     }
+}
+// Helper function to compute dot product for two 1-D arrays of FiniteField
+fn dot_product(a: &Array1<FiniteField>, b: &Array1<FiniteField>) -> Result<FiniteField, FiniteFieldError> {
+    if a.len() != b.len() {
+        return Err(super::finite_field::FiniteFieldError::new("Vectors must be of the same length"));
+    }
+
+    let mut result = FiniteField::zero(&a[0].p);
+
+    for i in 0..a.len() {
+        result = result + a[i] * b[i];
+    }
+
+    Ok(result)
 }
 
 #[cfg(test)]
@@ -90,8 +114,8 @@ mod tests {
         let x = Array::from(vec![FiniteField::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
         let w = Array::from(vec![FiniteField::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
         let r1cs = R1CS { m: 1, n: 1, N: 1, l: 1, A: a, B: b, C: c };
-        let instance = R1CSInstance { x: x };
-        let witness = R1CSWitness { w: w };
+        let instance = R1CSInstance { x };
+        let witness = R1CSWitness { w };
 
         assert!(!r1cs.is_satisfied_by(&instance, &witness).unwrap());
     }
