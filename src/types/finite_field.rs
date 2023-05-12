@@ -23,8 +23,8 @@ impl fmt::Display for FiniteFieldError {
 
 #[derive(Debug, Clone)]
 pub struct FiniteField {
-    value: BigUint,
-    p: BigUint,
+    pub value: BigUint,
+    pub p: BigUint,
 }
 
 impl FiniteField {

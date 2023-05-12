@@ -1,6 +1,8 @@
 use ndarray::{Array, Array2}; // For matrix and vector operations
 use std::fmt;
 
+use super::finite_field::FiniteField;
+
 #[derive(Debug)]
 pub struct CCSError {
     details: String

@@ -1,4 +1,4 @@
-use ndarray::{Array, Array2}; // For matrix and vector operations
+use ndarray::{Array, Array2, IxDyn}; // For matrix and vector operations
 use std::fmt;
 use crate::types::finite_field::FiniteField;
 // Custom error for operations that are not allowed in R1CS
@@ -30,11 +30,11 @@ pub struct R1CS {
 }
 
 pub struct R1CSInstance {
-    x: Array<FiniteField>,
+    x: Array<FiniteField, IxDyn>,
 }
 
 pub struct R1CSWitness {
-    w: Array<FiniteField>,
+    w: Array<FiniteField, IxDyn>,
 }
 
 impl R1CS {
