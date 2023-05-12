@@ -1,6 +1,6 @@
 use ndarray::{Array, Array2}; // For matrix and vector operations
 use std::fmt;
-
+use crate::types::finite_field::FiniteField;
 // Custom error for operations that are not allowed in R1CS
 #[derive(Debug)]
 pub struct R1CSError {
