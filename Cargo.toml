@@ -11,6 +11,9 @@ version    ="0.1.0"
 anyhow   ="1.0"
 thiserror="1.0"
 log      ="0.4.14" 
+ark-ff = "0.4.2"
+nalgebra = "0.32.2"
+ndarray = "0.15.6"
 
 # Common
 # itertools = "0.10.3" # danielkeep.github.io/itercheat_baked.html

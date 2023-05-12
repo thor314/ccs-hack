@@ -1,4 +1,6 @@
 // Import necessary libraries
-pub mod ccs; // For the CCS structure
-pub mod r1cs; // For the R1CS structure
-pub mod FiniteField;
+pub mod ccs; 
+pub mod r1cs; 
+// pub mod air;
+// pub mod plonkish;
+pub mod finite_field;
