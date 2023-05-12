@@ -125,6 +125,3 @@ mod tests {
         assert!(r1cs.is_satisfied_by(&instance, &witness).is_err());
     }
 }
-
-
-}
