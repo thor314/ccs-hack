@@ -71,20 +71,7 @@ impl R1CS {
         Ok(result.iter().all(|x| x.is_zero()))
     }
 }
-// Helper function to compute dot product for two 1-D arrays of FiniteField
-fn dot_product(a: &Array1<FiniteField>, b: &Array1<FiniteField>) -> Result<FiniteField, FiniteFieldError> {
-    if a.len() != b.len() {
-        return Err(super::finite_field::FiniteFieldError::new("Vectors must be of the same length"));
-    }
 
-    let mut result = FiniteField::zero(&a[0].p);
-
-    for i in 0..a.len() {
-        result = result + a[i] * b[i];
-    }
-
-    Ok(result)
-}
 
 #[cfg(test)]
 mod tests {
