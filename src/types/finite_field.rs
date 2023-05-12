@@ -21,8 +21,8 @@ impl fmt::Display for FiniteFieldError {
 
 #[derive(Debug, Clone)]
 pub struct FiniteField {
-    pub value: BigUint,
-    pub p: BigUint,
+  pub value: BigUint,
+  pub p:     BigUint,
 }
 
 impl FiniteField {
@@ -94,7 +94,6 @@ impl Div for FiniteField {
     Ok(self * other.inverse()?)
   }
 }
-
 
 #[cfg(test)]
 mod tests {
