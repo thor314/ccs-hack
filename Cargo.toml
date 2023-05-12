@@ -1,0 +1,76 @@
+[package]
+authors    =["Thor Kamphefner <thorck@pm.me>"]
+description="""a hack implemntation of CCS generic arithmetization"""
+edition    ="2021"
+license    ="Apache2.0 OR MIT"
+name       ="ccs-hack"
+repository ="https://github.com/thor314/ccs-hack"
+version    ="0.1.0"
+
+[dependencies]
+anyhow   ="1.0"
+thiserror="1.0"
+log      ="0.4.14" 
+
+# Common
+# itertools = "0.10.3" # danielkeep.github.io/itercheat_baked.html
+# cfg-if = "1.0.0" # branching compilation logic
+# serde = { version = "1", features = ["derive"] }
+# serde_json = { version = "1.0" }
+# rand = { version = "0.8" }
+# validator = { version = "0.15", features = ["derive"]}
+
+# Occasionally useful convenience macros and APIs
+# cute = "0.3"           # python-like list comprehensions: c!
+# delegate = "0.7.0"     # macro to forward method calls to inner types
+# kiam = "0.1.1"         # macro for prettier conditionals: when!
+# rayon = "1.5.3"        # speeding parallel processing of Iterators
+# tap =  "1.0.1"         # {tap,pipe} combinator ownership plumbing utils
+# tylift = "0.3.5"       # type macro, lift enum variants into types
+
+# Async dependencies
+# tracing = "0.1"
+# tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] } # Your dependencies start here
+
+# TF are lightweight, faster compiling, less unsafe alternatives to futures/tokio.
+# async-std   ={ version = "1.6", features = ["attributes"] }
+# futures={ version ="0.3", features = ["executor", "thread-pool"] } 
+# futures-lite="1.12.0"
+# tokio  ={ version = "1", features = ["full"] }
+
+# actix = "0.11.0" # actix: ergonomic actor framework
+# actix-rt = "2.2" # <-- Runtime for actix
+# async-trait = "0.1.56" # macro to write `async fn` inside traits
+# crossbeam = "0.8.6" # concurrency tool subcrates
+# crossbeam_channel = "0.5.6" # more flexible & performant channels
+# tokio-stream = "0.1.9" # tokio 1.0 didn't ship with stream utilities
+# tasky = "3.0.1" # a lazy explicit task runner, nightly only
+# futures-concurrency = "3.0.1" # the convenient join API your mother warned you about
+# merge-streams = "0.1.2" # merge streams into a single Stream
+# pin-project = "1.0.11" # projection of a Pin from struct to fields, useful when implementing polling
+
+# [features]
+# some_feature = ["dep:serde","dep:serde_json"] # use this to use optional dependencies
+
+[dev-dependencies]
+
+## Bench ##
+criterion = "0.4"
+# iai = "0.1" # criterion alternative
+
+## Testing utils
+arbitrary = { version = "1.1", features = ["derive"] } # see quickcheck
+# test-log =  { version = "0.2", default-features = false, features = ["trace"] } 
+test-log = "0.2"        # log/tracing independent test-log consumer
+
+quickcheck = "1.0"      # lowkey proptest suite
+quickcheck_macros = "1" # derive 
+rstest = "0.16"         # testing convenience proc-macros
+
+[[test]]
+name = "integration"
+path = "tests/tests.rs"
+
+[[bench]]
+name = "bench"
+harness = false
