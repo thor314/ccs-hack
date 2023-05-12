@@ -35,14 +35,13 @@ pub struct CCS {
 }
 
 pub struct CCSInstance {
-    x: Array<FiniteField, D>,
+    x: Array<FiniteField>,
 }
 
 pub struct CCSWitness {
-    w: Array<FiniteField, D>,
+    w: Array<FiniteField>,
 }
 
-use num_traits::One;
 
 impl One for FiniteField {
     fn one() -> Self {

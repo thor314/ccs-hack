@@ -2,7 +2,6 @@ use ndarray::{Array, Array2, IxDyn};
 use num_bigint::BigUint; // For matrix and vector operations
 use std::fmt;
 use crate::types::finite_field::FiniteField;
-use num_traits::One;
 
 // Custom error for operations that are not allowed in R1CS
 #[derive(Debug)]

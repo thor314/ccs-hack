@@ -4,7 +4,6 @@ use std::{
 };
 
 use num_bigint::{BigUint, ToBigUint};
-use num_traits::{One, Zero};
 
 // Custom error for operations that are not allowed in a Finite Field
 #[derive(Debug)]
