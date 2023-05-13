@@ -35,7 +35,7 @@ impl<F: Field, P: Polynomial<F, Point = F>> PlonkishStructure<F, P> {
             // Iterate over each point in the constraint
             for &point in &constraint.points {
                 // Constraint is satisfied if g applied to this point is zero
-                if self.g.evaluate(&P::Point::from(point)) != F::zero() {
+                if self.g.evaluate(&point) != F::zero() {
                     return false;
                 }
             }
