@@ -4,7 +4,7 @@ use ark_ff::PrimeField;
 pub mod ccs;
 pub mod r1cs;
 // pub mod air;
-// pub mod plonkish;
+pub mod plonkish;
 // pub mod finite_field;
 
 /// convenience type for constant-sized l-dimensional array
