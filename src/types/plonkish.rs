@@ -61,4 +61,51 @@ mod tests {
 
         assert!(structure.check_constraints(&x, &w));
     }
+
+    #[test]
+    fn test_non_trivial_polynomial() {
+        // g(x) = x^2 + 1
+        let g: DensePolynomial<Fr> = DensePolynomial::from_coefficients_vec(vec![Fr::one(), Fr::zero(), Fr::one()]);
+
+        // Create a selector array filled with ones
+        let s = Array::ones(1);
+
+        // Create an array of constraints. For this test, we will just use one constraint that requires g(x) = 0, which is not possible for g(x) = x^2 + 1
+        let constraint = Constraint { indices: vec![Fr::zero()] };
+        let constraints = Array2::from_elem((1, 1), constraint);
+        let structure = PlonkishStructure { m: 1, n: 1, e: 1, t: 1, q: 1, d: 2, g, s, constraints };
+
+        // Test that the constraints are not satisfied with a witness of [0]
+        assert!(!structure.check_constraints(&Array::zeros(1), &Array::zeros(1)));
+
+        // Test that the constraints are not satisfied with a witness of [1]
+        assert!(!structure.check_constraints(&Array::ones(1), &Array::ones(1)));
+    }
+
+    #[test]
+    fn test_unsatisfied_constraints() {
+           // Define g(x) = x^2 + 1
+    let g: DensePolynomial<Fr> = DensePolynomial::from_coefficients_vec(vec![Fr::one(), Fr::zero(), Fr::one()]);
+
+    // Create a selector array filled with ones
+    let s = Array::ones(1);
+
+    // Create an array of constraints. For this test, we will just use one constraint that requires g(x) = 0
+    // This is impossible for g(x) = x^2 + 1, so this constraint will never be satisfied
+    let constraint = Constraint { indices: vec![Fr::zero()] };
+    let constraints = Array2::from_elem((1, 1), constraint);
+
+    // Create the Plonkish structure
+    let structure = PlonkishStructure { m: 1, n: 1, e: 1, t: 1, q: 1, d: 2, g, s, constraints };
+
+    // Test that the constraints are not satisfied with a witness of [1]
+    assert!(!structure.check_constraints(&Array::ones(1), &Array::ones(1)));
+
+    // Test that the constraints are not satisfied with a witness of [0]
+    assert!(!structure.check_constraints(&Array::zeros(1), &Array::zeros(1)));
+
+    // Test that the constraints are not satisfied with a random witness
+    let witness = Array::from_elem(1, Fr::from(3u32));
+    assert!(!structure.check_constraints(&witness, &witness));
+    }
 }
