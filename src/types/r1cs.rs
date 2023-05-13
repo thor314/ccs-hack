@@ -1,10 +1,9 @@
 use std::fmt;
 
-use ark_ff::PrimeField;
-use ndarray::{Array, Array2, IxDyn};
+use ark_ff::{Field, Fp384};
+use ndarray::{Array, Array2, IxDyn, Ix1};
 use num_bigint::BigUint; // For matrix and vector operations
-
-// use crate::types::finite_field::FiniteField;
+use ark_bls12_381::Fr;  // Fr is the prime field for the Bls12_381 curve
 
 // Custom error for operations that are not allowed in R1CS
 // todo: enum
@@ -21,7 +20,7 @@ impl fmt::Display for R1CSError {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.details) }
 }
 
-pub struct R1CS<F: PrimeField> {
+pub struct R1CS<F: Field> {
   m: usize,
   n: usize,
   N: usize,
@@ -31,19 +30,24 @@ pub struct R1CS<F: PrimeField> {
   C: Array2<F>,
 }
 
-pub struct R1CSInstance<F: PrimeField> {
-  x: Array<F, IxDyn>,
+// TODO the instance and witness should be able to handle higher dimensions
+// I just started right now with 1D arrays for simplicity
+// Whith dynamically sized arrays i ran into some complications when testing
+
+pub struct R1CSInstance<F: Field> {
+  x: Array<F, Ix1>,
 }
 
-pub struct R1CSWitness<F: PrimeField> {
-  w: Array<F, IxDyn>,
+  
+pub struct R1CSWitness<F: Field> {
+  w: Array<F, Ix1>,
 }
 
-impl<F: PrimeField> R1CS<F> {
+impl<F: Field> R1CS<F> {
   pub fn is_satisfied_by(
     &self,
-    instance: &R1CSInstance,
-    witness: &R1CSWitness,
+    instance: &R1CSInstance<F>,
+    witness: &R1CSWitness<F>,
   ) -> Result<bool, R1CSError> {
     if self.A.shape() != self.B.shape() || self.B.shape() != self.C.shape() {
       return Err(R1CSError::new("A, B, and C must have the same dimensions"));
@@ -54,7 +58,7 @@ impl<F: PrimeField> R1CS<F> {
     }
 
     // Compute z = (w, 1, x)
-    let one_value = F::new(BigUint::one(), self.A[[0, 0]].p.clone());
+    let one_value = ark_ff::One::one();
     let z = witness
       .w
       .clone()
@@ -67,7 +71,7 @@ impl<F: PrimeField> R1CS<F> {
     let b_product = self.B.dot(&z);
     let c_product = self.C.dot(&z);
 
-    let lhs: Array<_, _> = a_product.iter().zip(b_product.iter()).map(|(a, b)| a * b).collect();
+    let lhs: Array<_, _> = a_product.iter().zip(b_product.iter()).map(|(a, b)| *a * *b).collect();
 
     let result = lhs - c_product;
 
@@ -78,68 +82,96 @@ impl<F: PrimeField> R1CS<F> {
 
 #[cfg(test)]
 mod tests {
-  use ark_ff::Fp2; // arbitrary convenient quadratic extension field
-  use ndarray::arr2; // For creating 2D arrays
+  use ark_ff::{Fp2, Fp}; // arbitrary convenient quadratic extension field
+  use ndarray::{arr2, arr1}; // For creating 2D arrays
   use num_bigint::ToBigUint;
 
   use super::*;
 
-  #[test]
-  fn test_r1cs_satisfied() {
-    let a = arr2(&[[Fp2::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
-    let b = arr2(&[[Fp2::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
-    let c = arr2(&[[Fp2::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
-    let x = Array::from(vec![Fp2::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
-    let w = Array::from(vec![Fp2::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
-    let r1cs = R1CS { m: 1, n: 1, N: 1, l: 1, A: a, B: b, C: c };
-    let instance = R1CSInstance { x };
-    let witness = R1CSWitness { w };
+    #[test]
+    fn test_r1cs_satisfied() {
+        let a: Array2<Fr> = Array2::from_elem((1, 1), Fr::ONE + Fr::ONE);
+        let b: Array2<Fr> = Array2::from_elem((1, 1), Fr::ONE + Fr::ONE);
+        let c: Array2<Fr> = Array2::from_elem((1, 1), Fr::ONE + Fr::ONE + Fr::ONE + Fr::ONE);
 
-    assert!(r1cs.is_satisfied_by(&instance, &witness).unwrap());
-  }
+        let x = arr1(&[Fr::ONE + Fr::ONE]);
+        let w = arr1(&[Fr::ONE + Fr::ONE]);
+        
 
-  #[test]
-  fn test_r1cs_not_satisfied() {
-    let a = arr2(&[[Fp2::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
-    let b = arr2(&[[Fp2::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
-    let c = arr2(&[[Fp2::new(3.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
-    let x = Array::from(vec![Fp2::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
-    let w = Array::from(vec![Fp2::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
-    let r1cs = R1CS { m: 1, n: 1, N: 1, l: 1, A: a, B: b, C: c };
-    let instance = R1CSInstance { x };
-    let witness = R1CSWitness { w };
+        let r1cs = R1CS { m: 1, n: 1, N: 1, l: 1, A: a, B: b, C: c };
+        let instance = R1CSInstance { x };
+        let witness = R1CSWitness { w };
 
-    assert!(!r1cs.is_satisfied_by(&instance, &witness).unwrap());
-  }
+        assert!(r1cs.is_satisfied_by(&instance, &witness).unwrap());
+    }
 
-  #[test]
-  fn test_r1cs_invalid_dimensions() {
-    let a = arr2(&[[Fp2::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
-    let b = arr2(&[[
-      Fp2::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap()),
-      Fp2::new(3.to_biguint().unwrap(), 5.to_biguint().unwrap()),
-    ]]);
-    let c = arr2(&[[Fp2::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
-    let x = Array::from(vec![Fp2::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
-    let w = Array::from(vec![Fp2::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
-    let r1cs = R1CS { m: 1, n: 1, N: 1, l: 1, A: a, B: b, C: c };
-    let instance = R1CSInstance { x };
-    let witness = R1CSWitness { w };
 
-    assert!(r1cs.is_satisfied_by(&instance, &witness).is_err());
-  }
 
-  #[test]
-  fn test_r1cs_invalid_n_l() {
-    let a = arr2(&[[Fp2::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
-    let b = arr2(&[[Fp2::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
-    let c = arr2(&[[Fp2::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
-    let x = Array::from(vec![Fp2::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
-    let w = Array::from(vec![Fp2::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
-    let r1cs = R1CS { m: 1, n: 1, N: 1, l: 2, A: a, B: b, C: c };
-    let instance = R1CSInstance { x };
-    let witness = R1CSWitness { w };
+    #[test]
+    fn test_r1cs_not_satisfied() {
+        let a: Array2<Fr> = Array2::from_elem((1, 1), Fr::ONE + Fr::ONE);
+        let b: Array2<Fr> = Array2::from_elem((1, 1), Fr::ONE + Fr::ONE);
+        let c: Array2<Fr> = Array2::from_elem((1, 1), Fr::ONE + Fr::ONE + Fr::ONE);  // Here, c is different from the product of a and b, so the constraint should not be satisfied
 
-    assert!(r1cs.is_satisfied_by(&instance, &witness).is_err());
-  }
+        let x = arr1(&[Fr::ONE + Fr::ONE]);
+        let w = arr1(&[Fr::ONE + Fr::ONE]);
+
+        let r1cs = R1CS { m: 1, n: 1, N: 1, l: 1, A: a, B: b, C: c };
+        let instance = R1CSInstance { x };
+        let witness = R1CSWitness { w };
+
+        assert!(!r1cs.is_satisfied_by(&instance, &witness).unwrap());
+    }
+
+
+    #[test]
+    fn test_r1cs_invalid_dimensions() {
+        let a: Array2<Fr> = Array2::from_elem((1, 1), Fr::ONE);
+        let b: Array2<Fr> = Array2::from_elem((1, 2), Fr::ONE + Fr::ONE); // Different dimensions
+        let c: Array2<Fr> = Array2::from_elem((1, 1), Fr::ONE + Fr::ONE + Fr::ONE);
+
+        let x = Array::from_elem((1, ), Fr::ONE + Fr::ONE);
+        let w = Array::from_elem((1, ), Fr::ONE + Fr::ONE);
+
+        let r1cs = R1CS { m: 1, n: 1, N: 1, l: 1, A: a, B: b, C: c };
+        let instance = R1CSInstance { x };
+        let witness = R1CSWitness { w };
+
+        assert!(r1cs.is_satisfied_by(&instance, &witness).is_err());
+    }
+
+
+    #[test]
+    fn test_r1cs_invalid_n_l() {
+        let a: Array2<Fr> = Array2::from_elem((1, 1), Fr::ONE);
+        let b: Array2<Fr> = Array2::from_elem((1, 1), Fr::ONE + Fr::ONE);
+        let c: Array2<Fr> = Array2::from_elem((1, 1), Fr::ONE + Fr::ONE + Fr::ONE);
+    
+        let x = Array::from_elem((1, ), Fr::ONE + Fr::ONE);
+        let w = Array::from_elem((1, ), Fr::ONE + Fr::ONE);
+    
+        // l value is set to 2 instead of 1
+        let r1cs = R1CS { m: 1, n: 1, N: 1, l: 2, A: a, B: b, C: c }; 
+        let instance = R1CSInstance { x };
+        let witness = R1CSWitness { w };
+    
+        assert!(r1cs.is_satisfied_by(&instance, &witness).is_err());
+    }
+    
+    #[test]
+    fn test_r1cs_higher_dimension() {
+        let a: Array2<Fr> = Array2::from_elem((2, 2), Fr::ONE + Fr::ONE);
+        let b: Array2<Fr> = Array2::from_elem((2, 2), Fr::ONE + Fr::ONE + Fr::ONE);
+        let c: Array2<Fr> = Array2::from_elem((2, 2), Fr::ONE + Fr::ONE + Fr::ONE + Fr::ONE);
+    
+        let x = Array::from_elem((2, ), Fr::ONE + Fr::ONE);
+        let w = Array::from_elem((2, ), Fr::ONE + Fr::ONE);
+    
+        let r1cs = R1CS { m: 2, n: 2, N: 2, l: 2, A: a, B: b, C: c };
+        let instance = R1CSInstance { x };
+        let witness = R1CSWitness { w };
+    
+        assert!(r1cs.is_satisfied_by(&instance, &witness).unwrap());
+    }
+
 }

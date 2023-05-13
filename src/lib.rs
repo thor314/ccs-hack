@@ -5,5 +5,6 @@
 use anyhow::Result;
 
 mod error;
-#[cfg(test)] mod tests;
+#[cfg(test)]
+mod tests;
 mod types;
