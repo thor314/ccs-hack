@@ -12,7 +12,6 @@ use super::{ccs::CCS, Matrix}; // For matrix and vector operations // Fr is the 
 // Custom error for operations that are not allowed in R1CS
 #[derive(Debug, Error)]
 pub enum R1CSError {
-  // placeholder error type
   #[error(transparent)]
   Anyhow(#[from] anyhow::Error),
   #[error("Default error: {0}")]
@@ -20,19 +19,17 @@ pub enum R1CSError {
 }
 
 pub struct R1CS<F: Field> {
-  m: usize,
+  /// matrix width
   n: usize,
-  N: usize,
+  /// matrix height
+  m: usize,
   l: usize,
-  // todo: array2 -> matrix
+  N: usize,
   A: Matrix<F>,
   B: Matrix<F>,
   C: Matrix<F>,
 }
 
-/// TODO the instance and witness should be able to handle higher dimensions
-/// I just started right now with 1D arrays for simplicity ⚡
-/// With dynamically sized arrays i ran into some complications when testing
 pub struct R1CSInstance<F: Field> {
   x: Vec<F>,
 }
@@ -43,61 +40,52 @@ pub struct R1CSWitness<F: Field> {
 
 impl<F: Field> R1CS<F> {
   pub fn new(
-    m: usize,
     n: usize,
-    N: usize,
+    m: usize,
     l: usize,
+    N: usize,
     A: Matrix<F>,
     B: Matrix<F>,
     C: Matrix<F>,
   ) -> Self {
+    assert!(n > l);
+    for matrix in [&A, &B, &C] {
+      assert!(matrix.len() == n);
+      // lazybug: doesn't check if the matrices are jagged
+      assert!(matrix[0].len() == m);
+    }
     Self { m, n, l, N, A, B, C }
   }
 
   /// computes z, and the r1cs product, checks if r1cs product reln is satisfied
-  pub fn is_satisfied_by(
-    &self,
-    instance: &R1CSInstance<F>,
-    witness: &R1CSWitness<F>,
-  ) -> Result<bool, R1CSError> {
-    todo!()
-    //   if self.A.shape() != self.B.shape() || self.B.shape() != self.C.shape() {
-    //     return Err(anyhow!("A, B, and C must have the same dimensions").into());
-    //   }
+  pub fn is_satisfied_by(&self, instance: &R1CSInstance<F>, witness: &R1CSWitness<F>) -> bool {
+    // Compute z = (w, 1, x)
+    let z: Vec<F> = witness
+      .w
+      .clone()
+      .into_iter()
+      .chain(std::iter::once(F::one()).chain(instance.x.clone().into_iter()))
+      .collect();
 
-    //   if self.n < self.l {
-    //     return Err(anyhow!("n must be greater than l").into());
-    //   }
+    // Compute (A * z) * (B * z) - C * z
+    let dot = |v: &[F], w: &[F]| v.iter().zip(w.iter()).map(|(vi, wi)| *vi * *wi).sum();
+    let Az: Vec<F> = self.A.iter().map(|row| dot(row, &z)).collect();
+    let Bz: Vec<F> = self.A.iter().map(|row| dot(row, &z)).collect();
+    let Cz: Vec<F> = self.A.iter().map(|row| dot(row, &z)).collect();
 
-    //   // Compute z = (w, 1, x)
-    //   let one_value = ark_ff::One::one();
-    //   let z = witness
-    //     .w
-    //     .clone()
-    //     .into_iter()
-    //     .chain(std::iter::once(one_value).chain(instance.x.clone().into_iter()))
-    //     .collect::<Array<_, _>>();
-
-    //   // Compute (A * z) * (B * z) - C * z
-    //   let a_product = self.A.dot(&z);
-    //   let b_product = self.B.dot(&z);
-    //   let c_product = self.C.dot(&z);
-
-    //   let lhs: Array<_, _> = a_product.iter().zip(b_product.iter()).map(|(a, b)| *a *
-    // *b).collect();
-
-    //   let result = lhs - c_product;
-
-    //   // Check if all entries are zero
-    //   Ok(result.iter().all(|x| x.is_zero()))
+    Az.into_iter()
+      .zip(Bz.into_iter())
+      .zip(Cz.into_iter())
+      .map(|((a, b), c)| a * b - c)
+      .all(|x| x == F::zero())
   }
 
   pub fn to_ccs(&self) -> CCS<F> {
     let (t, q, d) = (3, 2, 2);
-    let multisets = vec!(vec![0, 1], vec![2]);
+    let multisets = vec![vec![0, 1], vec![2]];
     let constants: Vec<isize> = vec![1, -1];
     let matrices = vec![self.A.clone(), self.B.clone(), self.C.clone()];
-    CCS::new(self.n, self.l, self.m, self.N, t, q, d, matrices, multisets, constants)
+    CCS::new(self.n, self.m, self.l, self.N, t, q, d, matrices, multisets, constants)
   }
 }
 

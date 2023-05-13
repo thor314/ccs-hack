@@ -27,9 +27,11 @@ pub enum CCSError {
 // todo: may want to move some of these usize parameters into type gen
 #[derive(Debug)]
 pub struct CCS<F: Field> {
+  // matrix width
   n:         usize,
-  l:         usize,
+  // matrix height
   m:         usize,
+  l:         usize,
   N:         usize,
   t:         usize,
   q:         usize,
@@ -58,10 +60,13 @@ pub struct CCSInstance<F: Field> {
 
 impl<F: Field> CCS<F> {
   pub fn new(
+    // matrix width
     n: usize,
-    l: usize,
+    // matrix height
     m: usize,
+    l: usize,
     N: usize,
+    // maximum element value for multiset
     t: usize,
     q: usize,
     d: usize,
@@ -84,8 +89,8 @@ impl<F: Field> CCS<F> {
 
     Self {
       n,
-      l,
       m,
+      l,
       N,
       t,
       q,
@@ -141,7 +146,7 @@ impl<F: Field> CCS<F> {
     if self.r1cs_representable() {
       let (A, B, C) =
         (self.matrices[0].clone(), self.matrices[1].clone(), self.matrices[2].clone());
-      Ok(R1CS::new(self.m, self.n, self.N, self.l, A, B, C))
+      Ok(R1CS::new(self.n, self.m, self.l, self.N, A, B, C))
     } else {
       Err(anyhow!("CCS is not R1CS representable").into())
     }

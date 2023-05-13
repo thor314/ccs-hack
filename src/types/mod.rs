@@ -9,6 +9,7 @@ pub mod r1cs;
 // pub mod finite_field;
 /// convenience type for matrix type placeholder
 pub type Matrix<F> = Vec<Vec<F>>;
+// pub type nmMatrix<F, const n: usize, const m: usize> = [[F; m]; n];
 
 /// Multisets are represented as Vecs (placeholder)
 /// Multisets from domain $[t-1]$, with cardinality of each multiset at most $d$
