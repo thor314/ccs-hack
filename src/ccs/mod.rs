@@ -1,6 +1,5 @@
-
 use anyhow::{anyhow, Result};
-use ark_ff::{Field};
+use ark_ff::Field;
 
 use self::types::{CCSInstance, CCSWitness};
 use crate::{r1cs::R1CS, utils::*, Matrix, Multiset}; // For matrix and vector operations
@@ -148,10 +147,7 @@ impl<F: Field> CCS<F> {
   // }
 
   /// Is this CCS instance Plonkish representable?
-  pub fn plonkish_representable(&self) -> bool {
-    todo!()
-  }
-
+  pub fn plonkish_representable(&self) -> bool { todo!() }
 
   // /// Convert the CCS instance into an Plonkish instance
   // pub fn to_air(&self) -> Result<AIR<F>> {
@@ -166,7 +162,6 @@ impl<F: Field> CCS<F> {
   // pub fn air_representable(&self) -> bool {
   //   todo!()
   // }
-
 
   /// z = (w, 1, x)
   fn compute_z<'a>(w: &'a [F], x: &'a [F]) -> Vec<F> {

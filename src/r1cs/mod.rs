@@ -1,7 +1,6 @@
 use ark_ff::Field;
 
 use self::types::{R1CSInstance, R1CSWitness};
-
 use super::{ccs::CCS, Matrix};
 use crate::utils::*; // For matrix and vector operations // Fr is the prime field for the Bls12_381 curve
 
