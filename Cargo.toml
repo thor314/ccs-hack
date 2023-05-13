@@ -8,16 +8,18 @@ repository ="https://github.com/thor314/ccs-hack"
 version    ="0.1.0"
 
 [dependencies]
-anyhow       ="1.0"
-thiserror    ="1.0"
-log          ="0.4.14"
-ark-ff       ="0.4.2"
-nalgebra     ="0.32.2"
-ndarray      ="0.15.6"
-num-bigint   ="0.4.3"
-num-traits   ="0.2.15"
-ark-bls12-381="0.4.0"
+anyhow   ="1.0"
+thiserror="1.0"
+log      ="0.4.14" 
+ark-ff = "0.4.2"
+nalgebra = "0.32.2"
+ndarray = "0.15.6"
+num-bigint = "0.4.3"
+num-traits = "0.2.15"
+ark-bls12-381 = "0.4.0"
 typenum      ="1.16.0"
+ark-poly = "0.4.0"
+ark-std = "0.4.0"
 # Common
 # itertools = "0.10.3" # danielkeep.github.io/itercheat_baked.html
 # cfg-if = "1.0.0" # branching compilation logic
