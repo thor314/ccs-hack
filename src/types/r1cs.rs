@@ -99,7 +99,10 @@ mod tests {
 
   #[test]
   fn test_r1cs_satisfied() {
-    let (a, b, c) = setup(3);
+    let a: Array2<Fr> = Array2::from_elem((1, 1), Fr::ONE + Fr::ONE);
+    let b: Array2<Fr> = Array2::from_elem((1, 1), Fr::ONE + Fr::ONE);
+    let c: Array2<Fr> = Array2::from_elem((1, 1), Fr::ONE);
+    
     let x = arr1(&[Fr::ONE + Fr::ONE]);
     let w = arr1(&[Fr::ONE + Fr::ONE]);
 
@@ -112,9 +115,9 @@ mod tests {
 
   #[test]
   fn test_r1cs_not_satisfied() {
-    let a: Array2<Fr> = Array2::from_elem((1, 1), Fr::ONE + Fr::ONE);
-    let b: Array2<Fr> = Array2::from_elem((1, 1), Fr::ONE + Fr::ONE);
-    let c: Array2<Fr> = Array2::from_elem((1, 1), Fr::ONE + Fr::ONE + Fr::ONE); // Here, c is different from the product of a and b, so the constraint should not be satisfied
+    let a: Array2<Fr> = Array2::from_elem((1, 3), Fr::ONE + Fr::ONE);
+    let b: Array2<Fr> = Array2::from_elem((1, 3), Fr::ONE + Fr::ONE);
+    let c: Array2<Fr> = Array2::from_elem((1, 3), Fr::ONE + Fr::ONE + Fr::ONE); // Here, c is different from the product of a and b, so the constraint should not be satisfied
 
     let x = arr1(&[Fr::ONE + Fr::ONE]);
     let w = arr1(&[Fr::ONE + Fr::ONE]);
