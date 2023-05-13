@@ -1,5 +1,6 @@
 use std::fmt;
 
+use super::utils::*;
 use anyhow::anyhow;
 use ark_bls12_381::Fr;
 use ark_ff::{Field, Fp384};
@@ -68,10 +69,6 @@ impl<F: Field> R1CS<F> {
       .collect();
 
     // convenience; todo; move to utils
-    let dot = |v: &[F], w: &[F]| v.iter().zip(w.iter()).map(|(vi, wi)| *vi * *wi).sum();
-    let matrix_vector_prod =
-      |matrix: &Vec<Vec<F>>, vector: &Vec<F>| matrix.iter().map(|row| dot(row, &z)).collect();
-
     let Az: Vec<F> = matrix_vector_prod(&self.A, &z);
     let Bz: Vec<F> = matrix_vector_prod(&self.B, &z);
     let Cz: Vec<F> = matrix_vector_prod(&self.C, &z);
