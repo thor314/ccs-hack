@@ -18,6 +18,8 @@ num-bigint = "0.4.3"
 num-traits = "0.2.15"
 ark-bls12-381 = "0.4.0"
 typenum      ="1.16.0"
+ark-poly = "0.4.0"
+ark-std = "0.4.0"
 # Common
 # itertools = "0.10.3" # danielkeep.github.io/itercheat_baked.html
 # cfg-if = "1.0.0" # branching compilation logic

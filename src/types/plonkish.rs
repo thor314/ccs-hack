@@ -23,7 +23,8 @@ impl<F: Field, P: Polynomial<F>> PlonkishStructure<F, P> {
         // Concatenate the witness, public input, and selectors
         // Todo: handle this error better
         let z = ndarray::stack(ndarray::Axis(0), &[w.view(), x.view(), self.s.view()]).unwrap();
-        let z = z.into_shape((z.len(),)).unwrap();
+        let len = z.len();
+        let z = z.into_shape(len).unwrap();
         
         // Check each constraint
         for constraint in &self.constraints {
@@ -39,4 +40,3 @@ impl<F: Field, P: Polynomial<F>> PlonkishStructure<F, P> {
         true
     }
 }
-
