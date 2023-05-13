@@ -3,7 +3,7 @@ use anyhow::{anyhow, Result};
 use ark_ff::{Field};
 
 use self::types::{CCSInstance, CCSWitness};
-use super::{r1cs::R1CS, utils::*, Matrix, Multiset}; // For matrix and vector operations
+use crate::{r1cs::R1CS, utils::*, Matrix, Multiset}; // For matrix and vector operations
 
 pub mod types;
 // todo
