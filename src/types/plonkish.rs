@@ -14,6 +14,7 @@ struct PlonkishStructure <F: Field, P: Polynomial<F>> {
     s: Array<F, Ix1>, // 1 dimensional for now
     constraints: Array2<Constraint<P::Point>>, // use P::Point in Constraint
 }
+#[derive(Clone)]
 struct Constraint<T> {
     indices: Vec<T>,
 }
@@ -38,5 +39,26 @@ impl<F: Field, P: Polynomial<F>> PlonkishStructure<F, P> {
         }
 
         true
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ark_bls12_381::Fr;
+    use ark_poly::{univariate::DensePolynomial, DenseUVPolynomial};
+    use ark_ff::{Field, One, Zero, Fp};
+
+    #[test]
+    fn test_plonkish_satisfied() {
+        // Define the polynomial g(x) = x by its coefficients [0, 1]
+        let g: DensePolynomial<Fr> = DensePolynomial::from_coefficients_vec(vec![Fr::zero(), Fr::one()]);
+        let s = Array::from(vec![Fp::one()]);
+        let constraints = Array2::from_elem((1, 1), Constraint { indices: vec![Fp::zero()] });
+        let structure = PlonkishStructure { m: 1, n: 1, e: 1, t: 1, q: 1, d: 1, g, s, constraints };
+
+        let x = Array::from(vec![Fp::zero()]);
+        let w = Array::from(vec![Fp::zero()]);
+
+        assert!(structure.check_constraints(&x, &w));
     }
 }
