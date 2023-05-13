@@ -142,4 +142,38 @@ mod tests {
 
     assert!(r1cs.is_satisfied_by(&instance, &witness).is_err());
   }
+  #[test]
+  fn test_r1cs_higher_dimension() {
+    let a = arr2(&[
+        [Fp2::new(1.to_biguint().unwrap(), 5.to_biguint().unwrap()), Fp2::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap())],
+        [Fp2::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap()), Fp2::new(3.to_biguint().unwrap(), 5.to_biguint().unwrap())]
+    ]);
+    let b = a.clone();
+    let c = a.clone();
+    let x = Array::from(vec![
+        Fp2::new(2.to_biguint().unwrap(), 5.to_biguint().unwrap()),
+        Fp2::new(3.to_biguint().unwrap(), 5.to_biguint().unwrap())
+    ]);
+    let w = x.clone();
+    let r1cs = R1CS { m: 2, n: 2, N: 2, l: 2, A: a, B: b, C: c };
+    let instance = R1CSInstance { x };
+    let witness = R1CSWitness { w };
+
+    assert!(r1cs.is_satisfied_by(&instance, &witness).unwrap());
+}
+
+    #[test]
+    fn test_r1cs_zero_values() {
+        let a = arr2(&[[Fp2::new(0.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
+        let b = arr2(&[[Fp2::new(0.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
+        let c = arr2(&[[Fp2::new(0.to_biguint().unwrap(), 5.to_biguint().unwrap())]]);
+        let x = Array::from(vec![Fp2::new(0.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
+        let w = Array::from(vec![Fp2::new(0.to_biguint().unwrap(), 5.to_biguint().unwrap())]);
+        let r1cs = R1CS { m: 1, n: 1, N: 1, l: 1, A: a, B: b, C: c };
+        let instance = R1CSInstance { x };
+        let witness = R1CSWitness { w };
+
+        assert!(r1cs.is_satisfied_by(&instance, &witness).unwrap());
+}
+
 }

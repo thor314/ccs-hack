@@ -25,7 +25,8 @@ where
   // enforce `n-l>0` at type level
   // ensure that `n-l` can be computed correctly
   [(); n - l]:,
-  usize: Unsigned + Bounded, {
+  usize: Unsigned + Bounded,
+{
   m: usize,
   // todo: n > l
   N: usize,
@@ -34,7 +35,7 @@ where
   d: usize,
   /// matrices $M_0,...,M_{t-1}\in \mathbb F^{m\times n}$ with at most $N=\Omega(\max(m,n))$
   /// non-zero entries in total
-  M: Vec<Array<F,t>>,
+  M: Vec<Array<F, t>>,
   /// a sequence of $q$ multisets $[S_0,...,S_{q-1}]$ where an element in each multiset is from the
   /// domain $[t-1]$, with cardinatily of each multiset at most $d$
   S: Multiset<usize>,
