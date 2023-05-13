@@ -1,11 +1,6 @@
-use std::fmt;
 
 use super::utils::*;
-use anyhow::anyhow;
-use ark_bls12_381::Fr;
-use ark_ff::{Field, Fp384};
-use ndarray::{Array, Array2, Ix1, IxDyn};
-use num_bigint::BigUint;
+use ark_ff::{Field};
 use thiserror::Error;
 
 use super::{ccs::CCS, Matrix}; // For matrix and vector operations // Fr is the prime field for the Bls12_381 curve

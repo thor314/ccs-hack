@@ -1,6 +1,6 @@
 use ark_ff::Field;
 use ark_poly::Polynomial;
-use ndarray::{concatenate, Array, Array2, Ix1, IxDyn};
+use ndarray::{Array, Array2, Ix1};
 
 struct PlonkishStructure<F: Field, P: Polynomial<F>> {
   m:           usize,

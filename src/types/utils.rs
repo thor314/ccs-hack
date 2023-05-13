@@ -2,7 +2,7 @@ use ark_ff::Field;
 
 // convenience; todo; move to utils
 pub(crate) fn dot<F: Field>(v: &[F], w: &[F]) -> F {
-  v.iter().zip(w.iter()).map(|(vi, wi)| *vi * *wi).sum()
+  v.iter().zip(w.iter()).map(|(&vi, &wi)| vi * wi).sum()
 }
 
 pub(crate) fn matrix_vector_prod<F: Field>(matrix: &[Vec<F>], vector: &[F]) -> Vec<F> {

@@ -1,6 +1,3 @@
-use ark_ff::PrimeField;
-use nalgebra::{DMatrix, MatrixView};
-
 // Import necessary libraries
 pub mod ccs;
 pub mod r1cs;
