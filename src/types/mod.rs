@@ -1,7 +1,7 @@
 use ark_ff::PrimeField;
 
 // Import necessary libraries
-pub mod ccs;
+// pub mod ccs;
 pub mod r1cs;
 // pub mod air;
 // pub mod plonkish;

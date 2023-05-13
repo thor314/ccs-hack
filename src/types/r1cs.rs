@@ -1,9 +1,9 @@
 use std::fmt;
 
+use ark_bls12_381::Fr;
 use ark_ff::{Field, Fp384};
-use ndarray::{Array, Array2, IxDyn, Ix1};
-use num_bigint::BigUint; // For matrix and vector operations
-use ark_bls12_381::Fr;  // Fr is the prime field for the Bls12_381 curve
+use ndarray::{Array, Array2, Ix1, IxDyn};
+use num_bigint::BigUint; // For matrix and vector operations // Fr is the prime field for the Bls12_381 curve
 
 // Custom error for operations that are not allowed in R1CS
 // todo: enum
@@ -25,25 +25,26 @@ pub struct R1CS<F: Field> {
   n: usize,
   N: usize,
   l: usize,
+  // todo: array2 -> matrix
   A: Array2<F>,
   B: Array2<F>,
   C: Array2<F>,
 }
 
 // TODO the instance and witness should be able to handle higher dimensions
-// I just started right now with 1D arrays for simplicity
+// I just started right now with 1D arrays for simplicity ⚡
 // Whith dynamically sized arrays i ran into some complications when testing
 
 pub struct R1CSInstance<F: Field> {
   x: Array<F, Ix1>,
 }
 
-  
 pub struct R1CSWitness<F: Field> {
   w: Array<F, Ix1>,
 }
 
 impl<F: Field> R1CS<F> {
+  /// computes z, and the r1cs product, checks if r1cs product reln is satisfied
   pub fn is_satisfied_by(
     &self,
     instance: &R1CSInstance<F>,
@@ -82,96 +83,95 @@ impl<F: Field> R1CS<F> {
 
 #[cfg(test)]
 mod tests {
-  use ark_ff::{Fp2, Fp}; // arbitrary convenient quadratic extension field
-  use ndarray::{arr2, arr1}; // For creating 2D arrays
+  use ark_ff::{Fp, Fp2}; // arbitrary convenient quadratic extension field
+  use ndarray::{arr1, arr2, ArrayBase}; // For creating 2D arrays
   use num_bigint::ToBigUint;
 
   use super::*;
 
-    #[test]
-    fn test_r1cs_satisfied() {
-        let a: Array2<Fr> = Array2::from_elem((1, 1), Fr::ONE + Fr::ONE);
-        let b: Array2<Fr> = Array2::from_elem((1, 1), Fr::ONE + Fr::ONE);
-        let c: Array2<Fr> = Array2::from_elem((1, 1), Fr::ONE + Fr::ONE + Fr::ONE + Fr::ONE);
+  fn setup(n: usize) -> (Array2<Fr>, Array2<Fr>, Array2<Fr>) {
+    let a: Array2<Fr> = Array2::from_elem((1, 1), Fr::ONE + Fr::ONE);
+    let b: Array2<Fr> = Array2::from_elem((1, 1), Fr::ONE + Fr::ONE);
+    let c: Array2<Fr> = Array2::from_elem((1, 1), Fr::ONE);
 
-        let x = arr1(&[Fr::ONE + Fr::ONE]);
-        let w = arr1(&[Fr::ONE + Fr::ONE]);
-        
+    (a, b, c)
+  }
 
-        let r1cs = R1CS { m: 1, n: 1, N: 1, l: 1, A: a, B: b, C: c };
-        let instance = R1CSInstance { x };
-        let witness = R1CSWitness { w };
+  #[test]
+  fn test_r1cs_satisfied() {
+    let (a, b, c) = setup(3);
+    let x = arr1(&[Fr::ONE + Fr::ONE]);
+    let w = arr1(&[Fr::ONE + Fr::ONE]);
 
-        assert!(r1cs.is_satisfied_by(&instance, &witness).unwrap());
-    }
+    let r1cs = R1CS { m: 1, n: 1, N: 1, l: 1, A: a, B: b, C: c };
+    let instance = R1CSInstance { x };
+    let witness = R1CSWitness { w };
 
+    assert!(r1cs.is_satisfied_by(&instance, &witness).unwrap());
+  }
 
+  #[test]
+  fn test_r1cs_not_satisfied() {
+    let a: Array2<Fr> = Array2::from_elem((1, 1), Fr::ONE + Fr::ONE);
+    let b: Array2<Fr> = Array2::from_elem((1, 1), Fr::ONE + Fr::ONE);
+    let c: Array2<Fr> = Array2::from_elem((1, 1), Fr::ONE + Fr::ONE + Fr::ONE); // Here, c is different from the product of a and b, so the constraint should not be satisfied
 
-    #[test]
-    fn test_r1cs_not_satisfied() {
-        let a: Array2<Fr> = Array2::from_elem((1, 1), Fr::ONE + Fr::ONE);
-        let b: Array2<Fr> = Array2::from_elem((1, 1), Fr::ONE + Fr::ONE);
-        let c: Array2<Fr> = Array2::from_elem((1, 1), Fr::ONE + Fr::ONE + Fr::ONE);  // Here, c is different from the product of a and b, so the constraint should not be satisfied
+    let x = arr1(&[Fr::ONE + Fr::ONE]);
+    let w = arr1(&[Fr::ONE + Fr::ONE]);
 
-        let x = arr1(&[Fr::ONE + Fr::ONE]);
-        let w = arr1(&[Fr::ONE + Fr::ONE]);
+    let r1cs = R1CS { m: 1, n: 1, N: 1, l: 1, A: a, B: b, C: c };
+    let instance = R1CSInstance { x };
+    let witness = R1CSWitness { w };
 
-        let r1cs = R1CS { m: 1, n: 1, N: 1, l: 1, A: a, B: b, C: c };
-        let instance = R1CSInstance { x };
-        let witness = R1CSWitness { w };
+    assert!(!r1cs.is_satisfied_by(&instance, &witness).unwrap());
+  }
 
-        assert!(!r1cs.is_satisfied_by(&instance, &witness).unwrap());
-    }
+  #[test]
+  fn test_r1cs_invalid_dimensions() {
+    let a: Array2<Fr> = Array2::from_elem((1, 1), Fr::ONE);
+    let b: Array2<Fr> = Array2::from_elem((1, 2), Fr::ONE + Fr::ONE); // Different dimensions
+    let c: Array2<Fr> = Array2::from_elem((1, 1), Fr::ONE + Fr::ONE + Fr::ONE);
 
+    let x = Array::from_elem((1,), Fr::ONE + Fr::ONE);
+    let w = Array::from_elem((1,), Fr::ONE + Fr::ONE);
 
-    #[test]
-    fn test_r1cs_invalid_dimensions() {
-        let a: Array2<Fr> = Array2::from_elem((1, 1), Fr::ONE);
-        let b: Array2<Fr> = Array2::from_elem((1, 2), Fr::ONE + Fr::ONE); // Different dimensions
-        let c: Array2<Fr> = Array2::from_elem((1, 1), Fr::ONE + Fr::ONE + Fr::ONE);
+    let r1cs = R1CS { m: 1, n: 1, N: 1, l: 1, A: a, B: b, C: c };
+    let instance = R1CSInstance { x };
+    let witness = R1CSWitness { w };
 
-        let x = Array::from_elem((1, ), Fr::ONE + Fr::ONE);
-        let w = Array::from_elem((1, ), Fr::ONE + Fr::ONE);
+    assert!(r1cs.is_satisfied_by(&instance, &witness).is_err());
+  }
 
-        let r1cs = R1CS { m: 1, n: 1, N: 1, l: 1, A: a, B: b, C: c };
-        let instance = R1CSInstance { x };
-        let witness = R1CSWitness { w };
+  #[test]
+  fn test_r1cs_invalid_n_l() {
+    let a: Array2<Fr> = Array2::from_elem((1, 1), Fr::ONE);
+    let b: Array2<Fr> = Array2::from_elem((1, 1), Fr::ONE + Fr::ONE);
+    let c: Array2<Fr> = Array2::from_elem((1, 1), Fr::ONE + Fr::ONE + Fr::ONE);
 
-        assert!(r1cs.is_satisfied_by(&instance, &witness).is_err());
-    }
+    let x = Array::from_elem((1,), Fr::ONE + Fr::ONE);
+    let w = Array::from_elem((1,), Fr::ONE + Fr::ONE);
 
+    // l value is set to 2 instead of 1
+    let r1cs = R1CS { m: 1, n: 1, N: 1, l: 2, A: a, B: b, C: c };
+    let instance = R1CSInstance { x };
+    let witness = R1CSWitness { w };
 
-    #[test]
-    fn test_r1cs_invalid_n_l() {
-        let a: Array2<Fr> = Array2::from_elem((1, 1), Fr::ONE);
-        let b: Array2<Fr> = Array2::from_elem((1, 1), Fr::ONE + Fr::ONE);
-        let c: Array2<Fr> = Array2::from_elem((1, 1), Fr::ONE + Fr::ONE + Fr::ONE);
-    
-        let x = Array::from_elem((1, ), Fr::ONE + Fr::ONE);
-        let w = Array::from_elem((1, ), Fr::ONE + Fr::ONE);
-    
-        // l value is set to 2 instead of 1
-        let r1cs = R1CS { m: 1, n: 1, N: 1, l: 2, A: a, B: b, C: c }; 
-        let instance = R1CSInstance { x };
-        let witness = R1CSWitness { w };
-    
-        assert!(r1cs.is_satisfied_by(&instance, &witness).is_err());
-    }
-    
-    #[test]
-    fn test_r1cs_higher_dimension() {
-        let a: Array2<Fr> = Array2::from_elem((2, 2), Fr::ONE + Fr::ONE);
-        let b: Array2<Fr> = Array2::from_elem((2, 2), Fr::ONE + Fr::ONE + Fr::ONE);
-        let c: Array2<Fr> = Array2::from_elem((2, 2), Fr::ONE + Fr::ONE + Fr::ONE + Fr::ONE);
-    
-        let x = Array::from_elem((2, ), Fr::ONE + Fr::ONE);
-        let w = Array::from_elem((2, ), Fr::ONE + Fr::ONE);
-    
-        let r1cs = R1CS { m: 2, n: 2, N: 2, l: 2, A: a, B: b, C: c };
-        let instance = R1CSInstance { x };
-        let witness = R1CSWitness { w };
-    
-        assert!(r1cs.is_satisfied_by(&instance, &witness).unwrap());
-    }
+    assert!(r1cs.is_satisfied_by(&instance, &witness).is_err());
+  }
 
+  #[test]
+  fn test_r1cs_higher_dimension() {
+    let a: Array2<Fr> = Array2::from_elem((2, 2), Fr::ONE + Fr::ONE);
+    let b: Array2<Fr> = Array2::from_elem((2, 2), Fr::ONE + Fr::ONE + Fr::ONE);
+    let c: Array2<Fr> = Array2::from_elem((2, 2), Fr::ONE + Fr::ONE + Fr::ONE + Fr::ONE);
+
+    let x = Array::from_elem((2,), Fr::ONE + Fr::ONE);
+    let w = Array::from_elem((2,), Fr::ONE + Fr::ONE);
+
+    let r1cs = R1CS { m: 2, n: 2, N: 2, l: 2, A: a, B: b, C: c };
+    let instance = R1CSInstance { x };
+    let witness = R1CSWitness { w };
+
+    assert!(r1cs.is_satisfied_by(&instance, &witness).unwrap());
+  }
 }
