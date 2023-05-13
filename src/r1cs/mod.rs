@@ -1,17 +1,11 @@
-use crate::utils::*;
-use ark_ff::{Field};
-use thiserror::Error;
+use ark_ff::Field;
 
-use super::{ccs::CCS, Matrix}; // For matrix and vector operations // Fr is the prime field for the Bls12_381 curve
+use self::types::{R1CSInstance, R1CSWitness};
 
-// Custom error for operations that are not allowed in R1CS
-#[derive(Debug, Error)]
-pub enum R1CSError {
-  #[error(transparent)]
-  Anyhow(#[from] anyhow::Error),
-  #[error("Default error: {0}")]
-  Default(String),
-}
+use super::{ccs::CCS, Matrix};
+use crate::utils::*; // For matrix and vector operations // Fr is the prime field for the Bls12_381 curve
+
+pub mod types;
 
 pub struct R1CS<F: Field> {
   /// matrix width
@@ -23,14 +17,6 @@ pub struct R1CS<F: Field> {
   A: Matrix<F>,
   B: Matrix<F>,
   C: Matrix<F>,
-}
-
-pub struct R1CSInstance<F: Field> {
-  x: Vec<F>,
-}
-
-pub struct R1CSWitness<F: Field> {
-  w: Vec<F>,
 }
 
 impl<F: Field> R1CS<F> {
