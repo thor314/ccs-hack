@@ -28,6 +28,7 @@ pub enum CCSError {
 #[derive(Debug)]
 pub struct CCS<F: Field> {
   // matrix width
+  // n > l
   n:         usize,
   // matrix height
   m:         usize,

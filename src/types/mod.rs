@@ -5,7 +5,7 @@ use nalgebra::{DMatrix, MatrixView};
 pub mod ccs;
 pub mod r1cs;
 // pub mod air;
-// pub mod plonkish;
+pub mod plonkish;
 // pub mod finite_field;
 /// convenience type for matrix type placeholder
 pub type Matrix<F> = Vec<Vec<F>>;
