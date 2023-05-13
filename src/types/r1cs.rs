@@ -30,6 +30,10 @@ pub struct R1CS<F: Field> {
   C: Array2<F>,
 }
 
+// TODO the instance and witness should be able to handle higher dimensions
+// I just started right now with 1D arrays for simplicity
+// Whith dynamically sized arrays i ran into some complications when testing
+
 pub struct R1CSInstance<F: Field> {
   x: Array<F, Ix1>,
 }
