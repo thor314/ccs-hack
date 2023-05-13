@@ -1,9 +1,11 @@
 use std::fmt;
 
 use ark_ff::PrimeField;
+use nalgebra::CsMatrix;
 use ndarray::{Array, Array2};
 use num_bigint::BigUint;
 use thiserror::Error;
+use typenum::{Cmp, Greater, IsGreater};
 
 use super::{LArray, Multiset}; // For matrix and vector operations
 
@@ -15,18 +17,17 @@ pub enum CCSError {
   Default(String),
 }
 
-use num_traits::{Bounded, Unsigned};
-
 // Defining the CCS structure
 // todo: may want to move some of these usize parameters into type gen
 #[derive(Debug)]
 pub struct CCS<F: PrimeField, const l: usize, const n: usize, const t: usize>
 where
+  n: Cmp<l>,
+  n::Output: IsGreater, {
+  // n > l
   // enforce `n-l>0` at type level
   // ensure that `n-l` can be computed correctly
-  [(); n - l]:,
-  usize: Unsigned + Bounded,
-{
+  //   n::Cmp<l>::Output : Greater, { {
   m: usize,
   // todo: n > l
   N: usize,
@@ -63,7 +64,7 @@ pub struct CCSInstance<F: PrimeField, const l: usize> {
   x: LArray<F, l>,
 }
 
-impl<F: PrimeField, const l: usize, const n: usize, const t: usize> CCS<F, l, n, t> where [(); n - l]:, usize: Unsigned + Bounded{
+impl<F: PrimeField, const l: usize, const n: usize, const t: usize> CCS<F, l, n, t> {
   pub fn is_satisfied_by(
     &self,
     instance: &CCSInstance<F, l>,

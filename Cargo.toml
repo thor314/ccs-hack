@@ -17,7 +17,7 @@ ndarray = "0.15.6"
 num-bigint = "0.4.3"
 num-traits = "0.2.15"
 ark-bls12-381 = "0.4.0"
-ark-poly = "0.4.0"
+typenum      ="1.16.0"
 # Common
 # itertools = "0.10.3" # danielkeep.github.io/itercheat_baked.html
 # cfg-if = "1.0.0" # branching compilation logic
@@ -61,22 +61,22 @@ ark-poly = "0.4.0"
 [dev-dependencies]
 
 ## Bench ##
-criterion = "0.4"
+criterion="0.4"
 # iai = "0.1" # criterion alternative
 
 ## Testing utils
-arbitrary = { version = "1.1", features = ["derive"] } # see quickcheck
+arbitrary={ version="1.1", features=["derive"] } # see quickcheck
 # test-log =  { version = "0.2", default-features = false, features = ["trace"] } 
-test-log = "0.2"        # log/tracing independent test-log consumer
+test-log="0.2" # log/tracing independent test-log consumer
 
-quickcheck = "1.0"      # lowkey proptest suite
-quickcheck_macros = "1" # derive 
-rstest = "0.17"         # testing convenience proc-macros
+quickcheck       ="1.0"  # lowkey proptest suite
+quickcheck_macros="1"    # derive 
+rstest           ="0.17" # testing convenience proc-macros
 
 [[test]]
-name = "integration"
-path = "tests/tests.rs"
+name="integration"
+path="tests/tests.rs"
 
 [[bench]]
-name = "bench"
-harness = false
+name   ="bench"
+harness=false
