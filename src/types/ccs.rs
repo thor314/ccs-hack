@@ -40,11 +40,12 @@ pub struct CCS<F: Field> {
   /// matrices $M_0,...,M_{t-1}\in \mathbb F^{m\times n}$ with at most $N=\Omega(\max(m,n))$
   /// non-zero entries in total
   matrices:  Vec<Matrix<F>>,
-  /// a sequence of $q$ multisets $[S_0,...,S_{q-1}]$ where an element in each multiset is from the
-  /// domain $[t-1]$, with cardinality of each multiset at most $d$
+  /// A sequence of $q$ multisets $[S_0,...,S_{q-1}]$.
+  /// An element in each multiset is from the domain $[t-1]$.
+  /// Cardinality of each multiset at most $d$.
   multisets: Vec<Multiset<usize>>,
   /// a sequence of $q$ constants $[c_0,...,c_{q-1}]$ with $c_i\in \mathbb F$.
-  constants: Vec<isize>,
+  constants: Vec<F>,
 }
 
 /// A CCS witness consists of a vector $w\in $\mathbb F^{n-l-l}$.
@@ -73,7 +74,7 @@ impl<F: Field> CCS<F> {
     d: usize,
     matrices: Vec<Matrix<F>>,
     multisets: Vec<Multiset<usize>>,
-    constants: Vec<isize>,
+    constants: Vec<F>,
   ) -> Self {
     assert!(n > l);
     assert!(t > 0);
@@ -104,42 +105,43 @@ impl<F: Field> CCS<F> {
   }
 
   /// Implement the checks based on the equation (2) in the definition
-  /// This will involve matrix-vector multiplication, Hadamard product, and summing over the
-  pub fn is_satisfied_by(
-    &self,
-    instance: &CCSInstance<F>,
-    witness: &CCSWitness<F>,
-  ) -> Result<bool, CCSError> {
-    // Compute z = (w, 1, x)
-    let z = witness
-      .w
-      .clone()
+  /// $$\sum\limits_{i=0}^{q-1} c_i\cdot \bigcirc_{j\in S_i}M_j\cdot z=\mathbf{0}$$
+  pub fn is_satisfied_by(&self, instance: &CCSInstance<F>, witness: &CCSWitness<F>) -> bool {
+    let z = Self::compute_z(&witness.w, &instance.x);
+
+    // convenience; todo; move to utils
+    let dot = |v: &[F], w: &[F]| v.iter().zip(w.iter()).map(|(vi, wi)| *vi * *wi).sum();
+    let matrix_vector_prod = |matrix: &Vec<Vec<F>>, vector: &Vec<F>| {
+      matrix.iter().map(|row| dot(row, &z)).collect::<Vec<F>>()
+    };
+    let hadamard = |v1: &Vec<F>, v2: &Vec<F>| {
+      v1.iter().zip(v2.iter()).map(|(&v1_i, &v2_i)| v1_i * v2_i).collect()
+    };
+    let hadasum = |v1: &Vec<F>, v2: &Vec<F>| {
+      v1.iter().zip(v2.iter()).map(|(&v1_i, &v2_i)| v1_i + v2_i).collect()
+    };
+
+    // ⚠️ read carefully warning ⚠️
+    self
+      .constants
+      .iter()
+      .zip(self.multisets.iter())
+      .map(|(&c_i, s_i)| {
+        // each multiset s_i specifies the indices of matrices
+        s_i.iter().map(|&j| &self.matrices[j]).map(|M_j| matrix_vector_prod(M_j, &z))
+        // have a collection of vectors, now apply hadamard product
+        .reduce(|acc, row| hadamard(&acc, &row))
+        .unwrap()
+        // have the i'th vector corresponding to s_i, now apply constant
+        .into_iter()
+        .map(|el| el * c_i).collect::<Vec<_>>()
+        // it remains now only to sum all q vectors and check if the result is the zero vector
+      })
+      .reduce(|acc, row| hadasum(&acc, &row))
+      .unwrap()
       .into_iter()
-      .chain(std::iter::once(F::one()).chain(instance.x.clone().into_iter()))
-      .collect::<Array<_, _>>();
-
-    // Compute sum from i=0 to q-1 of (ci * sum for each j in Si of Mj * z)
-    // let mut vv = Vec::with_capacity(z.len());
-    // for c in self.constants {
-    //   for ms in self.multisets {
-    //     for matrix_j in ms.iter().map(|&idx| self.matrices[idx]) {
-    //       // todo
-    //       // vv.push(matrix_j * z)
-    //     }
-    //   }
-    // }
-    // for v in vv {}
-
-    // let result = (0..self.q)
-    //   .map(|i| {
-    //     self.constants[i]
-    //       * self.multisets[i].iter().fold(F::zero(), |sum, &j| sum + self.matrices[j].dot(&z))
-    //   })
-    //   .sum::<F>();
-
-    // Check if result is zero
-    // Ok(result.is_zero())
-    todo!()
+      // we good?
+      .all(|el| el.is_zero())
   }
 
   /// Convert the CCS instance into an R1CS instance
@@ -153,6 +155,11 @@ impl<F: Field> CCS<F> {
     }
   }
 
+  /// z = (w, 1, x)
+  fn compute_z<'a>(w: &'a [F], x: &'a [F]) -> Vec<F> {
+    w.iter().cloned().chain(std::iter::once(F::one())).chain(x.iter().cloned()).collect()
+  }
+
   /// Is this CCS instance R1CS representable?
   pub fn r1cs_representable(&self) -> bool {
     let S1 = vec![0, 1];
@@ -162,6 +169,6 @@ impl<F: Field> CCS<F> {
       && self.q == 2
       && self.d == 2
       && self.multisets == vec![S1, S2]
-      && self.constants == [1, -1]
+      && self.constants == [F::one(), -F::one()]
   }
 }

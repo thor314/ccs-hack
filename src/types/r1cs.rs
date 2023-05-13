@@ -67,11 +67,14 @@ impl<F: Field> R1CS<F> {
       .chain(std::iter::once(F::one()).chain(instance.x.clone().into_iter()))
       .collect();
 
-    // Compute (A * z) * (B * z) - C * z
+    // convenience; todo; move to utils
     let dot = |v: &[F], w: &[F]| v.iter().zip(w.iter()).map(|(vi, wi)| *vi * *wi).sum();
-    let Az: Vec<F> = self.A.iter().map(|row| dot(row, &z)).collect();
-    let Bz: Vec<F> = self.A.iter().map(|row| dot(row, &z)).collect();
-    let Cz: Vec<F> = self.A.iter().map(|row| dot(row, &z)).collect();
+    let matrix_vector_prod =
+      |matrix: &Vec<Vec<F>>, vector: &Vec<F>| matrix.iter().map(|row| dot(row, &z)).collect();
+
+    let Az: Vec<F> = matrix_vector_prod(&self.A, &z);
+    let Bz: Vec<F> = matrix_vector_prod(&self.B, &z);
+    let Cz: Vec<F> = matrix_vector_prod(&self.C, &z);
 
     Az.into_iter()
       .zip(Bz.into_iter())
@@ -83,7 +86,8 @@ impl<F: Field> R1CS<F> {
   pub fn to_ccs(&self) -> CCS<F> {
     let (t, q, d) = (3, 2, 2);
     let multisets = vec![vec![0, 1], vec![2]];
-    let constants: Vec<isize> = vec![1, -1];
+    // hack: I'm not sure what -1 is supposed to be
+    let constants: Vec<F> = vec![F::one(), -F::one()];
     let matrices = vec![self.A.clone(), self.B.clone(), self.C.clone()];
     CCS::new(self.n, self.m, self.l, self.N, t, q, d, matrices, multisets, constants)
   }
