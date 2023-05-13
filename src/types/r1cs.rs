@@ -1,23 +1,20 @@
 use std::fmt;
 
+use anyhow::anyhow;
 use ark_bls12_381::Fr;
 use ark_ff::{Field, Fp384};
 use ndarray::{Array, Array2, Ix1, IxDyn};
-use num_bigint::BigUint; // For matrix and vector operations // Fr is the prime field for the Bls12_381 curve
+use num_bigint::BigUint;
+use thiserror::Error; // For matrix and vector operations // Fr is the prime field for the Bls12_381 curve
 
 // Custom error for operations that are not allowed in R1CS
-// todo: enum
-#[derive(Debug)]
-pub struct R1CSError {
-  details: String,
-}
-
-impl R1CSError {
-  fn new(msg: &str) -> R1CSError { R1CSError { details: msg.to_string() } }
-}
-
-impl fmt::Display for R1CSError {
-  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.details) }
+#[derive(Debug, Error)]
+pub enum R1CSError {
+  // placeholder error type
+  #[error(transparent)]
+  Anyhow(#[from] anyhow::Error),
+  #[error("Default error: {0}")]
+  Default(String),
 }
 
 pub struct R1CS<F: Field> {
@@ -51,11 +48,11 @@ impl<F: Field> R1CS<F> {
     witness: &R1CSWitness<F>,
   ) -> Result<bool, R1CSError> {
     if self.A.shape() != self.B.shape() || self.B.shape() != self.C.shape() {
-      return Err(R1CSError::new("A, B, and C must have the same dimensions"));
+      return Err(anyhow!("A, B, and C must have the same dimensions").into());
     }
 
     if self.n < self.l {
-      return Err(R1CSError::new("n must be greater than l"));
+      return Err(anyhow!("n must be greater than l").into());
     }
 
     // Compute z = (w, 1, x)
