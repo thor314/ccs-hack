@@ -42,8 +42,8 @@ pub struct R1CSWitness<F: PrimeField> {
 impl<F: PrimeField> R1CS<F> {
   pub fn is_satisfied_by(
     &self,
-    instance: &R1CSInstance,
-    witness: &R1CSWitness,
+    instance: &R1CSInstance<F>,
+    witness: &R1CSWitness<F>,
   ) -> Result<bool, R1CSError> {
     if self.A.shape() != self.B.shape() || self.B.shape() != self.C.shape() {
       return Err(R1CSError::new("A, B, and C must have the same dimensions"));
