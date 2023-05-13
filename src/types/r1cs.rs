@@ -39,7 +39,51 @@ pub struct R1CSWitness<F: Field> {
 }
 
 impl<F: Field> R1CS<F> {
-  pub fn new(
+
+    // computes z, and the r1cs product, checks if r1cs product reln is satisfied
+    pub fn is_satisfied_by(
+        &self,
+        instance: &R1CSInstance<F>,
+        witness: &R1CSWitness<F>,
+      ) -> Result<bool, R1CSError> {
+
+        // Enforce A, B, and C have the same dimensions
+        if self.A.shape() != self.B.shape() || self.B.shape() != self.C.shape() {
+          return Err(R1CSError::new("A, B, and C must have the same dimensions"));
+        }
+        
+        // Enforce n < l
+        if self.n < self.l {
+          return Err(R1CSError::new("n must be greater than l"));
+        }
+
+        // check the shape of z
+        if self.n != witness.w.len() + 1 + instance.x.len() {
+            return Err(R1CSError::new("n must be equal to the length of w + 1 + the length of x"));
+        }
+      
+        // Compute z = (w, 1, x)
+        let one_value = ark_ff::One::one();
+        let z = witness
+          .w
+          .clone()
+          .into_iter()
+          .chain(std::iter::once(one_value).chain(instance.x.clone().into_iter()))
+          .collect::<Array<_, _>>();
+      
+        // Compute (A * z) * (B * z) - C * z
+        let a_product = self.A.dot(&z);
+        let b_product = self.B.dot(&z);
+        let c_product = self.C.dot(&z);
+      
+        let lhs: Array<_, _> = a_product.iter().zip(b_product.iter()).map(|(a, b)| *a * *b).collect();
+      
+        let result = lhs - c_product;
+      
+        // Check if all entries are zero
+        Ok(result.iter().all(|x| x.is_zero()))
+      }
+    pub fn new(
     n: usize,
     m: usize,
     l: usize,
@@ -78,13 +122,63 @@ impl<F: Field> R1CS<F> {
       .zip(Cz.into_iter())
       .map(|((a, b), c)| a * b - c)
       .all(|x| x == F::zero())
-  }
-
+    
   pub fn to_ccs(&self) -> CCS<F> {
     let (t, q, d) = (3, 2, 2);
     let multisets = vec![vec![0, 1], vec![2]];
     let constants: Vec<isize> = vec![1, -1];
     let matrices = vec![self.A.clone(), self.B.clone(), self.C.clone()];
     CCS::new(self.n, self.m, self.l, self.N, t, q, d, matrices, multisets, constants)
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use ark_ff::{Fp, Fp2}; // arbitrary convenient quadratic extension field
+  use ndarray::{arr1, arr2, ArrayBase}; // For creating 2D arrays
+  use num_bigint::ToBigUint;
+
+  use super::*;
+
+  fn _setup(n: usize) -> (Array2<Fr>, Array2<Fr>, Array2<Fr>) {
+    let a: Array2<Fr> = Array2::from_elem((1, 1), Fr::ONE + Fr::ONE);
+    let b: Array2<Fr> = Array2::from_elem((1, 1), Fr::ONE + Fr::ONE);
+    let c: Array2<Fr> = Array2::from_elem((1, 1), Fr::ONE);
+
+    (a, b, c)
+  }
+
+  #[test]
+  fn test_r1cs_satisfied() {
+    let a: Array2<Fr> = Array2::from_elem((1, 3), Fr::ONE + Fr::ONE);
+    let b: Array2<Fr> = Array2::from_elem((1, 3), Fr::ONE + Fr::ONE);
+    let c: Array2<Fr> = Array2::from_elem((1, 3), Fr::ONE);
+
+    let x = arr1(&[Fr::ONE + Fr::ONE]);
+    let w = arr1(&[Fr::ONE + Fr::ONE]);
+
+    let r1cs = R1CS { m: 1, n: 3, N: 1, l: 1, A: a, B: b, C: c };
+    let instance = R1CSInstance { x };
+    let witness = R1CSWitness { w };
+
+    assert!(r1cs.is_satisfied_by(&instance, &witness).unwrap());
+    }
+
+
+  #[test]
+  fn test_r1cs_not_satisfied() {
+    let a: Array2<Fr> = Array2::from_elem((1, 3), Fr::ONE + Fr::ONE);
+    let b: Array2<Fr> = Array2::from_elem((1, 3), Fr::ONE + Fr::ONE);
+    let c: Array2<Fr> = Array2::from_elem((1, 3), Fr::ONE + Fr::ONE + Fr::ONE); // Here, c is different from the product of a and b, so the constraint should not be satisfied
+
+    let x = arr1(&[Fr::ONE + Fr::ONE]);
+    let w = arr1(&[Fr::ONE + Fr::ONE]);
+
+    let r1cs = R1CS { m: 1, n: 3, N: 1, l: 1, A: a, B: b, C: c };
+    let instance = R1CSInstance { x };
+    let witness = R1CSWitness { w };
+
+    assert!(!r1cs.is_satisfied_by(&instance, &witness).unwrap());
+
   }
 }
