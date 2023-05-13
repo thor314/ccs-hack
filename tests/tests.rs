@@ -17,23 +17,20 @@
 struct Difference<const A: usize, const B: usize>;
 
 impl<const A: usize, const B: usize> Difference<A, B> {
-    const DIFF: usize = if A > B { A - B } else { B - A };
+  const DIFF: usize = if A > B { A - B } else { B - A };
 
-    fn get_difference() -> usize {
-        Self::DIFF
-    }
+  fn get_difference() -> usize { Self::DIFF }
 }
 
 #[test]
 fn t() {
-    const VAL_A: usize = 10;
-    const VAL_B: usize = 5;
+  const VAL_A: usize = 10;
+  const VAL_B: usize = 5;
 
-    let diff = Difference::<VAL_A, VAL_B>::get_difference();
-    println!("The difference is: {}", diff);
-    assert!(false)
+  let diff = Difference::<VAL_A, VAL_B>::get_difference();
+  println!("The difference is: {}", diff);
+  assert!(false)
 }
-
 
 // // set up test state in a workbench fixture.
 // #[fixture]
