@@ -10,7 +10,7 @@ pub mod r1cs;
 #[cfg(test)] mod tests;
 pub(crate) mod utils;
 // pub mod air;
-// pub mod plonkish;
+pub mod plonkish;
 
 pub use ccs::CCS;
 // pub use plonkish::Plonkish;
