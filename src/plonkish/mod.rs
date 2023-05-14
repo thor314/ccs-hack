@@ -3,31 +3,30 @@ use std::collections::HashSet;
 use ark_ff::Field;
 use ark_poly::Polynomial;
 
-use crate::plonkish::types::Point;
-
 use self::types::{
   PlonkishCopyConstraint, PlonkishGateConstraint, PlonkishInstance, PlonkishWitness,
   UncheckedCopyConstaint, UncheckedGateConstratint,
 };
+use crate::plonkish::types::Point;
 
 pub mod types;
 
 pub struct PlonkishStructure<F: Field, P: Polynomial<F, Point = F>> {
-  n: usize,
-  m: usize,
-  l: usize,
-  t: usize,
-  q: usize,
-  d: usize,
-  e: usize,
+  n:                usize,
+  m:                usize,
+  l:                usize,
+  t:                usize,
+  q:                usize,
+  d:                usize,
+  e:                usize,
   // todo: not entirely clear how to express this
   // Srinath's comment, via Shumo: "Uh, use a matrix"
   // Thor's comment: hrgnngngngggg, something like this? https://github.com/arkworks-rs/sumcheck/blob/master/src/ml_sumcheck/data_structures.rs#L33
   /// A multivariate polynomial $g$ in $t$ variables, where $g$ is a sum of $q$ monomials, with
   /// each monomial of degree at most $d$.
-  g: P,
+  g:                P,
   /// A vector of constants, over $\mathbb F^e$.
-  selectors: Vec<F>,
+  selectors:        Vec<F>,
   /// A set of $m$ constraints. Each constraint is specified via  vector $T_i$ of length $t$ over
   /// [n+e-1].
   gate_constraints: Vec<PlonkishGateConstraint<F>>,
@@ -90,6 +89,7 @@ impl<F: Field, P: Polynomial<F, Point = F>> PlonkishStructure<F, P> {
     }
     PlonkishGateConstraint { points: t_i }
   }
+
   pub fn new_copy_constraint(
     copy_constraint: UncheckedCopyConstaint,
     rows: usize,
