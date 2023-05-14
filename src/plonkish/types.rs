@@ -1,5 +1,5 @@
 use ark_ff::Field;
-pub type UncheckedCopyConstaint = (Point,Point);
+pub type UncheckedCopyConstaint = (Point, Point);
 pub type UncheckedGateConstratint<F> = Vec<F>;
 /// Each constraint $i$ is specified by a vector $T_i$ of len $t$, with
 /// entries over [n+e-1]. $T_i$ is interpreted as specifying $t$ entries of a purported
@@ -10,7 +10,7 @@ pub struct PlonkishGateConstraint<F: Field> {
 }
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct PlonkishCopyConstraint {
-  pub points: (Point,Point),
+  pub points: (Point, Point),
 }
 
 #[derive(Debug, Clone)]
@@ -25,7 +25,7 @@ pub struct PlonkishWitness<F: Field> {
   pub w: Vec<F>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Ord, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Point {
   pub x: usize,
   pub y: usize,

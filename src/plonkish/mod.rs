@@ -5,26 +5,29 @@ use ark_poly::Polynomial;
 
 use crate::plonkish::types::Point;
 
-use self::types::{PlonkishInstance, PlonkishWitness, UncheckedCopyConstaint, UncheckedGateConstratint, PlonkishGateConstraint, PlonkishCopyConstraint};
+use self::types::{
+  PlonkishCopyConstraint, PlonkishGateConstraint, PlonkishInstance, PlonkishWitness,
+  UncheckedCopyConstaint, UncheckedGateConstratint,
+};
 
 pub mod types;
 
 pub struct PlonkishStructure<F: Field, P: Polynomial<F, Point = F>> {
-  n:           usize,
-  m:           usize,
-  l:           usize,
-  t:           usize,
-  q:           usize,
-  d:           usize,
-  e:           usize,
+  n: usize,
+  m: usize,
+  l: usize,
+  t: usize,
+  q: usize,
+  d: usize,
+  e: usize,
   // todo: not entirely clear how to express this
   // Srinath's comment, via Shumo: "Uh, use a matrix"
   // Thor's comment: hrgnngngngggg, something like this? https://github.com/arkworks-rs/sumcheck/blob/master/src/ml_sumcheck/data_structures.rs#L33
   /// A multivariate polynomial $g$ in $t$ variables, where $g$ is a sum of $q$ monomials, with
   /// each monomial of degree at most $d$.
-  g:           P,
+  g: P,
   /// A vector of constants, over $\mathbb F^e$.
-  selectors:   Vec<F>,
+  selectors: Vec<F>,
   /// A set of $m$ constraints. Each constraint is specified via  vector $T_i$ of length $t$ over
   /// [n+e-1].
   gate_constraints: Vec<PlonkishGateConstraint<F>>,
@@ -36,7 +39,7 @@ impl<F: Field, P: Polynomial<F, Point = F>> PlonkishStructure<F, P> {
     m: usize, // numbers of rows
     n: usize, // number of columns
     l: usize, // size of public input (collums)
-    e: usize, // non selector collumns 
+    e: usize, // non selector collumns
     t: usize, // Number of variables
     q: usize, // number of terms in plonk equation
     d: usize, // Max degree
@@ -51,11 +54,15 @@ impl<F: Field, P: Polynomial<F, Point = F>> PlonkishStructure<F, P> {
     assert!(selectors.len() == e);
     assert!(gate_constraints.len() == m);
     let constraint_point_max = F::from((n + e - 1) as u64);
-    let gate_constraints: Vec<PlonkishGateConstraint<F>> =
-      gate_constraints.into_iter().map(|c| Self::new_gate_constraint(c, t, constraint_point_max)).collect();
+    let gate_constraints: Vec<PlonkishGateConstraint<F>> = gate_constraints
+      .into_iter()
+      .map(|c| Self::new_gate_constraint(c, t, constraint_point_max))
+      .collect();
 
-    let hashSet_copy_constraints: HashSet<_> = copy_constaints.into_iter().map(|c| Self::new_copy_constraint(c, m, n )).collect();
-    let copy_constraints: Vec<PlonkishCopyConstraint> = hashSet_copy_constraints.into_iter().collect();
+    let hashSet_copy_constraints: HashSet<_> =
+      copy_constaints.into_iter().map(|c| Self::new_copy_constraint(c, m, n)).collect();
+    let copy_constraints: Vec<PlonkishCopyConstraint> =
+      hashSet_copy_constraints.into_iter().collect();
     // get this ^ into a vec of copy constraints
     Self { m, n, l, e, t, q, d, g, selectors, gate_constraints, copy_constraints }
   }
@@ -83,17 +90,20 @@ impl<F: Field, P: Polynomial<F, Point = F>> PlonkishStructure<F, P> {
     }
     PlonkishGateConstraint { points: t_i }
   }
-  pub fn new_copy_constraint(copy_constraint: UncheckedCopyConstaint ,rows: usize, columns: usize) -> PlonkishCopyConstraint {
-
+  pub fn new_copy_constraint(
+    copy_constraint: UncheckedCopyConstaint,
+    rows: usize,
+    columns: usize,
+  ) -> PlonkishCopyConstraint {
     assert!(copy_constraint.0.x < columns);
     assert!(copy_constraint.1.x < columns);
     assert!(copy_constraint.0.y < rows);
     assert!(copy_constraint.1.y < rows);
     // enforce an ordering of the copy constraints
     if copy_constraint.0 > copy_constraint.1 {
-      return PlonkishCopyConstraint { points: (copy_constraint.1, copy_constraint.0) };
+      PlonkishCopyConstraint { points: (copy_constraint.1, copy_constraint.0) }
     } else {
-      return PlonkishCopyConstraint { points:  (copy_constraint.0, copy_constraint.1) };
+      PlonkishCopyConstraint { points: (copy_constraint.0, copy_constraint.1) }
     }
   }
 

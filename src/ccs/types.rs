@@ -13,9 +13,13 @@ pub struct CCSInstance<F: Field> {
 }
 
 impl<F: Field> CCSWitness<F> {
-  pub fn new(w: Vec<F>) -> Self { Self { w } }
+  pub fn new(w: Vec<F>) -> Self {
+    Self { w }
+  }
 }
 
 impl<F: Field> CCSInstance<F> {
-  pub fn new(x: Vec<F>) -> Self { Self { x } }
+  pub fn new(x: Vec<F>) -> Self {
+    Self { x }
+  }
 }

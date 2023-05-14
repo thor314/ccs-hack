@@ -16,22 +16,22 @@ pub mod types;
 pub struct CCS<F: Field> {
   /// matrix width.
   /// n > l
-  n:         usize,
+  n: usize,
   /// matrix height
-  m:         usize,
+  m: usize,
   /// Todo: what is l?
-  l:         usize,
+  l: usize,
   /// Todo: what is N?
-  N:         usize,
+  N: usize,
   /// Number of matrices
-  t:         usize,
+  t: usize,
   /// Number of multisets and constants
-  q:         usize,
+  q: usize,
   /// Cardinality bound for each element in multiset
-  d:         usize,
+  d: usize,
   /// matrices $M_0,...,M_{t-1}\in \mathbb F^{m\times n}$ with at most $N=\Omega(\max(m,n))$
   /// non-zero entries in total
-  matrices:  Vec<Matrix<F>>,
+  matrices: Vec<Matrix<F>>,
   /// A sequence of $q$ multisets $[S_0,...,S_{q-1}]$.
   /// An element in each multiset is from the domain $[t-1]$.
   /// Cardinality of each multiset at most $d$.
@@ -157,7 +157,9 @@ impl<F: Field> CCS<F> {
   // }
 
   /// Is this CCS instance Plonkish representable?
-  pub fn plonkish_representable(&self) -> bool { todo!() }
+  pub fn plonkish_representable(&self) -> bool {
+    todo!()
+  }
 
   // /// Convert the CCS instance into an Plonkish instance
   // pub fn to_air(&self) -> Result<AIR<F>> {
