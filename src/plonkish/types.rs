@@ -1,5 +1,5 @@
 use ark_ff::Field;
-pub type UncheckedCopyConstaint = ((usize,usize),(usize,usize));
+pub type UncheckedCopyConstaint = (Point,Point);
 pub type UncheckedGateConstratint<F> = Vec<F>;
 /// Each constraint $i$ is specified by a vector $T_i$ of len $t$, with
 /// entries over [n+e-1]. $T_i$ is interpreted as specifying $t$ entries of a purported
@@ -10,7 +10,7 @@ pub struct PlonkishGateConstraint<F: Field> {
 }
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct PlonkishCopyConstraint {
-  pub points: ((usize,usize),(usize,usize)),
+  pub points: (Point,Point),
 }
 
 #[derive(Debug, Clone)]
@@ -25,13 +25,17 @@ pub struct PlonkishWitness<F: Field> {
   pub w: Vec<F>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, Ord, Hash)]
 pub struct Point {
   pub x: usize,
   pub y: usize,
 }
 impl PartialOrd for Point {
   fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-    Some(self.cmp(other))
+    match self.x.cmp(&other.x) {
+      std::cmp::Ordering::Equal => self.y.partial_cmp(&other.y),
+      std::cmp::Ordering::Greater => Some(std::cmp::Ordering::Greater),
+      std::cmp::Ordering::Less => Some(std::cmp::Ordering::Less),
+    }
   }
 }

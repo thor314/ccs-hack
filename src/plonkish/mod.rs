@@ -3,6 +3,8 @@ use std::collections::HashSet;
 use ark_ff::Field;
 use ark_poly::Polynomial;
 
+use crate::plonkish::types::Point;
+
 use self::types::{PlonkishInstance, PlonkishWitness, UncheckedCopyConstaint, UncheckedGateConstratint, PlonkishGateConstraint, PlonkishCopyConstraint};
 
 pub mod types;
@@ -83,11 +85,16 @@ impl<F: Field, P: Polynomial<F, Point = F>> PlonkishStructure<F, P> {
   }
   pub fn new_copy_constraint(copy_constraint: UncheckedCopyConstaint ,rows: usize, columns: usize) -> PlonkishCopyConstraint {
 
-    assert!(copy_constraint.0.0 < columns);
-    assert!(copy_constraint.1.0 < columns);
-    assert!(copy_constraint.0.1 < rows);
-    assert!(copy_constraint.1.1 < rows);
-    PlonkishCopyConstraint { points: copy_constraint }
+    assert!(copy_constraint.0.x < columns);
+    assert!(copy_constraint.1.x < columns);
+    assert!(copy_constraint.0.y < rows);
+    assert!(copy_constraint.1.y < rows);
+    // enforce an ordering of the copy constraints
+    if copy_constraint.0 > copy_constraint.1 {
+      return PlonkishCopyConstraint { points: (copy_constraint.1, copy_constraint.0) };
+    } else {
+      return PlonkishCopyConstraint { points:  (copy_constraint.0, copy_constraint.1) };
+    }
   }
 
   pub fn new_instance(x: Vec<F>, n: usize, l: usize) -> PlonkishInstance<F> {
