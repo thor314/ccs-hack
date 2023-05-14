@@ -58,13 +58,13 @@ impl<F: Field, P: Polynomial<F, Point = F>> PlonkishStructure<F, P> {
     let z = [w.w.clone(), x.x.clone(), self.selectors.clone()].concat();
 
     // for all i in [m-1]
-    (0..self.m) .map(|i| 
-      // g(z[T_i[1]],...,z[T_i[t]])=0$
-      // self.g.evaluate(&self.constraints[i].points)
-        F::zero() // temp
-  )
-    // = 0? 
-    .all(|eval_i| eval_i == F::zero())
+    (0..self.m) .map(|i|
+        // g(z[T_i[1]],...,z[T_i[t]])=0$
+        // self.g.evaluate(&self.constraints[i].points)
+          F::zero() // temp
+    )
+      // = 0?
+      .all(|eval_i| eval_i == F::zero())
   }
 
   // todo: panic -> err

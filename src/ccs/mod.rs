@@ -110,8 +110,8 @@ impl<F: Field> CCS<F> {
                         // have the i'th vector corresponding to s_i, now apply constant
                         .into_iter()
                         .map(|el| el * c_i).collect::<Vec<_>>())
-            // it remains now only to sum all q vectors and check if the result is the zero vector
-          }) 
+            // it remains now only to sum all q vectors and check if the result is the zero vector         
+             })
           // collect Iter<Result<_>> into Result<Vec<_>>
           .collect::<Result<Vec<_>>>()?
           .into_iter()
