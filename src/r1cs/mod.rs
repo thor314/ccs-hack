@@ -40,12 +40,7 @@ impl<F: Field> R1CS<F> {
   /// computes z, and the r1cs product, checks if r1cs product reln is satisfied
   pub fn is_satisfied_by(&self, instance: &R1CSInstance<F>, witness: &R1CSWitness<F>) -> bool {
     // Compute z = (w, 1, x)
-    let z: Vec<F> = witness
-      .w
-      .clone()
-      .into_iter()
-      .chain(std::iter::once(F::one()).chain(instance.x.clone().into_iter()))
-      .collect();
+    let z = [witness.w.clone(), vec![F::one()], instance.x.clone()].concat();
 
     // convenience; todo; move to utils
     let Az: Vec<F> = matrix_vector_prod(&self.A, &z);

@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use ark_ff::Field;
 
 use self::types::{CCSInstance, CCSWitness};
@@ -87,30 +87,40 @@ impl<F: Field> CCS<F> {
 
   /// Implement the checks based on the equation (2) in the definition
   /// $$\sum\limits_{i=0}^{q-1} c_i\cdot \bigcirc_{j\in S_i}M_j\cdot z=\mathbf{0}$$
-  pub fn is_satisfied_by(&self, instance: &CCSInstance<F>, witness: &CCSWitness<F>) -> bool {
-    let z = Self::compute_z(&witness.w, &instance.x);
+  pub fn is_satisfied_by(
+    &self,
+    instance: &CCSInstance<F>,
+    witness: &CCSWitness<F>,
+  ) -> anyhow::Result<bool> {
+    // z = (w, 1, x)
+    let z = [witness.w.clone(), vec![F::one()], instance.x.clone()].concat();
 
-    // ⚠️ read carefully warning ⚠️
-    self
-      .constants
-      .iter()
-      .zip(self.multisets.iter())
-      .map(|(&c_i, s_i)| {
-        // each multiset s_i specifies the indices of matrices
-        s_i.iter().map(|&j| &self.matrices[j]).map(|M_j| matrix_vector_prod(M_j, &z))
-        // have a collection of vectors, now apply hadamard product
-        .reduce(|acc, row| hadamard(&acc, &row))
-        .unwrap()
-        // have the i'th vector corresponding to s_i, now apply constant
-        .into_iter()
-        .map(|el| el * c_i).collect::<Vec<_>>()
-        // it remains now only to sum all q vectors and check if the result is the zero vector
-      })
-      .reduce(|acc, row| hadasum(&acc, &row))
-      .unwrap()
-      .into_iter()
-      // we good?
-      .all(|el| el.is_zero())
+    // ⚠️ warning ⚠️
+    Ok(
+      self
+          .constants
+          .iter()
+          .zip(self.multisets.iter())
+          .map(|(&c_i, s_i)| {
+            // each multiset s_i specifies the indices of matrices
+            Ok(s_i.iter().map(|&j| &self.matrices[j]).map(|M_j| matrix_vector_prod(M_j, &z))
+                        // have a collection of vectors, now apply hadamard product
+                        .reduce(|acc, row| hadamard(&acc, &row))
+                        .with_context(||"failed to reduce ccs hadamard")?
+                        // have the i'th vector corresponding to s_i, now apply constant
+                        .into_iter()
+                        .map(|el| el * c_i).collect::<Vec<_>>())
+            // it remains now only to sum all q vectors and check if the result is the zero vector
+          }) 
+          // collect Iter<Result<_>> into Result<Vec<_>>
+          .collect::<Result<Vec<_>>>()?
+          .into_iter()
+          .reduce(|acc, row| hadasum(&acc, &row))
+          .with_context(||"failed to reduce ccs hadasum")?
+          .into_iter()
+          // we good?
+          .all(|el| el.is_zero()),
+    )
   }
 
   /// Convert the CCS instance into an R1CS instance
@@ -162,9 +172,4 @@ impl<F: Field> CCS<F> {
   // pub fn air_representable(&self) -> bool {
   //   todo!()
   // }
-
-  /// z = (w, 1, x)
-  fn compute_z<'a>(w: &'a [F], x: &'a [F]) -> Vec<F> {
-    w.iter().cloned().chain(std::iter::once(F::one())).chain(x.iter().cloned()).collect()
-  }
 }
