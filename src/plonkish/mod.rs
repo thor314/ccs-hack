@@ -1,7 +1,7 @@
 use ark_ff::Field;
 use ark_poly::Polynomial;
 
-use self::types::Constraint;
+use self::types::{PlonkishConstraint, PlonkishInstance, PlonkishWitness};
 
 pub mod types;
 
@@ -21,8 +21,9 @@ pub struct PlonkishStructure<F: Field, P: Polynomial<F, Point = F>> {
   g:           P,
   /// A vector of constants, over $\mathbb F^e$.
   selectors:   Vec<F>,
-  /// A set of $m$ constraints.
-  constraints: Vec<Constraint<F>>,
+  /// A set of $m$ constraints. Each constraint is specified via  vector $T_i$ of length $t$ over
+  /// [n+e-1].
+  constraints: Vec<PlonkishConstraint<F>>,
 }
 
 impl<F: Field, P: Polynomial<F, Point = F>> PlonkishStructure<F, P> {
@@ -50,34 +51,39 @@ impl<F: Field, P: Polynomial<F, Point = F>> PlonkishStructure<F, P> {
     Self { m, n, l, e, t, q, d, g, selectors, constraints }
   }
 
-  pub fn check_constraints(&self, x: &[F], w: &[F]) -> bool {
-    // Concatenate the witness, public input, and selectors
-    let z = [w, x, &self.selectors].concat();
-    todo!()
-    //   let z = ndarray::stack(ndarray::Axis(0), &[w.view(), x.view(),
-    // self.selectors.view()]).unwrap();   let len = z.len();
-    //   let z = z.into_shape(len).unwrap();
+  /// A Plonkish structure-instance (S,w) is satisfied by a Plonkish witness $w$ if:
+  /// for all $i\in [m-1], g(z[T_i[1]],...,z[T_i[t]])=0$
+  /// where $z=(w,x,s)\in\mathbb F^{n+e}$.
+  pub fn check_constraints(&self, x: &PlonkishInstance<F>, w: &PlonkishWitness<F>) -> bool {
+    let z = [w.w.clone(), x.x.clone(), self.selectors.clone()].concat();
 
-    //   // Check each constraint
-    //   for constraint in self.constraints.iter() {
-    //     // Iterate over each point in the constraint
-    //     for &point in &constraint.points {
-    //       // Constraint is satisfied if g applied to this point is zero
-    //       if self.g.evaluate(&point) != F::zero() {
-    //         return false;
-    //       }
-    //     }
-    //   }
-    //   true
+    // for all i in [m-1]
+    (0..self.m) .map(|i| 
+      // g(z[T_i[1]],...,z[T_i[t]])=0$
+      // self.g.evaluate(&self.constraints[i].points)
+        F::zero() // temp
+  )
+    // = 0? 
+    .all(|eval_i| eval_i == F::zero())
   }
 
   // todo: panic -> err
-  pub fn new_constraint(t_i: Vec<F>, t: usize, point_max: F) -> Constraint<F> {
+  pub fn new_constraint(t_i: Vec<F>, t: usize, point_max: F) -> PlonkishConstraint<F> {
     assert_eq!(t_i.len(), t);
     for &point in t_i.iter() {
       assert!(point <= point_max);
     }
-    Constraint { points: t_i }
+    PlonkishConstraint { points: t_i }
+  }
+
+  pub fn new_instance(x: Vec<F>, n: usize, l: usize) -> PlonkishInstance<F> {
+    assert_eq!(x.len(), l);
+    PlonkishInstance { x }
+  }
+
+  pub fn new_witness(w: Vec<F>, n: usize, l: usize) -> PlonkishWitness<F> {
+    assert_eq!(w.len(), n - l);
+    PlonkishWitness { w }
   }
 }
 
