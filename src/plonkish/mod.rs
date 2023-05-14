@@ -54,16 +54,15 @@ impl<F: Field, P: Polynomial<F, Point = F>> PlonkishStructure<F, P> {
   /// A Plonkish structure-instance (S,w) is satisfied by a Plonkish witness $w$ if:
   /// for all $i\in [m-1], g(z[T_i[1]],...,z[T_i[t]])=0$
   /// where $z=(w,x,s)\in\mathbb F^{n+e}$.
-  pub fn check_constraints(&self, x: &PlonkishInstance<F>, w: &PlonkishWitness<F>) -> bool {
+  pub fn is_satisfied_by(&self, x: &PlonkishInstance<F>, w: &PlonkishWitness<F>) -> bool {
     let z = [w.w.clone(), x.x.clone(), self.selectors.clone()].concat();
 
     // for all i in [m-1]
-    (0..self.m) .map(|i|
-        // g(z[T_i[1]],...,z[T_i[t]])=0$
-        // self.g.evaluate(&self.constraints[i].points)
-          F::zero() // temp
-    )
-      // = 0?
+    (0..self.m)
+      .map(
+        |i| F::zero(), /* temp
+                        * self.g.evaluate(&self.constraints[i].points) */
+      )
       .all(|eval_i| eval_i == F::zero())
   }
 
