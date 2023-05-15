@@ -1,5 +1,6 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, todo};
 
+use anyhow::Result;
 use ark_ff::Field;
 use ark_poly::Polynomial;
 
@@ -7,7 +8,7 @@ use self::types::{
   PlonkishCopyConstraint, PlonkishGateConstraint, PlonkishInstance, PlonkishWitness,
   UncheckedCopyConstaint, UncheckedGateConstratint,
 };
-use crate::plonkish::types::Point;
+use crate::{plonkish::types::Point, CCS};
 
 pub mod types;
 
@@ -79,6 +80,28 @@ impl<F: Field, P: Polynomial<F, Point = F>> PlonkishStructure<F, P> {
                         * self.g.evaluate(&self.constraints[i].points) */
       )
       .all(|eval_i| eval_i == F::zero())
+  }
+
+  pub fn to_ccs(&self) -> Result<CCS<F>> {
+    // define the t matrices in F^{mxn}
+    let mut M = vec![vec![F::zero(); self.n]; self.m];
+    for (i, &T_i) in self.gate_constraints.iter().enumerate() {
+      for (j, &k_j) in T_i.points.iter().enumerate() {
+        // thor: hmm uh
+        let k_j: usize = k_j.try_into().unwrap();
+        if k_j >= self.n {
+          M[i][k_j] = self.selectors[k_j - self.n];
+        } else {
+          M[i][k_j] = F::one();
+        }
+      }
+    }
+
+    let matrices = todo!();
+    let multisets = todo!();
+    let constants = todo!();
+
+    Ok(CCS::new(self.n, self.m, self.l, N, self.t, self.q, self.d, matrices, multisets, constants))
   }
 
   // todo: panic -> err
